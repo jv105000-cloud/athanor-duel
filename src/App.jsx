@@ -892,6 +892,8 @@ function App() {
                   (target.statuses?.invincible > 0)
                 );
 
+                let hitAny = false;
+
                 if (isEvaded) {
                   setBattleLog(prev => [...prev, `${logHeader}被躲過了！`]);
                   setEvadingHeroes([target.id]);
@@ -956,6 +958,7 @@ function App() {
 
                   const actualDmg = applyDamage(target, dmg, getVfxColor(actor.factionId), false, false, actor);
                   if (actualDmg > 0) {
+                    hitAny = true;
                     setBattleLog(prev => [...prev, `${logHeader}施展 [${action.name}]，造成 ${actualDmg} 點傷害！`]);
                   } else if (target.statuses?.untargetable > 0) {
                     setBattleLog(prev => [...prev, `${logHeader}捕捉不到 ${target.name} 的真身，攻擊落空了！`]);
@@ -965,7 +968,6 @@ function App() {
                 }
               } else if (action.type === 'ultimate') {
                 const skillName = action.name || "大招";
-                let hitAny = false;
 
                 if (action.effect === 'UNTARGETABLE_2_TURNS') {
                   setBattleLog(prev => [...prev, `${logHeader}施展 [${skillName}]！沒入影縫。`]);
