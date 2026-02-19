@@ -292,9 +292,9 @@ function App() {
         break;
       case 'SYNC_CHOICE':
         if (isHost) {
-          setP2Choice(prev => ({ ...prev, ...data }));
+          setP2Choice(prev => ({ ...prev, heroId: data.heroId, targetId: data.targetId }));
         } else {
-          setP1Choice(prev => ({ ...prev, ...data }));
+          setP1Choice(prev => ({ ...prev, heroId: data.heroId, targetId: data.targetId }));
         }
         break;
       case 'SYNC_READY':
@@ -312,6 +312,14 @@ function App() {
         setAbyssalChoice({ p1: null, p2: null });
         setBattlePhase('ABYSSAL_CHOICE');
         setBattleTimer(10);
+        // Critical: Guest needs this to know what to execute after selection
+        window.pendingSequence = {
+          computedP1: data.c1,
+          computedP2: data.c2,
+          r1_first: data.r1,
+          r2_first: data.r2,
+          seed: data.seed
+        };
         break;
       case 'SYNC_ABYSSAL_CHOICE':
         setAbyssalChoice(prev => ({ ...prev, [data.pId === 1 ? 'p1' : 'p2']: data.choiceIndex }));
@@ -632,12 +640,22 @@ function App() {
   }, [battlePhase, abyssalChoice, abyssalDice]);
 
   useEffect(() => {
-    if (view === 'battle' && battlePhase === 'CHOOSE' && p1Choice.heroId && p1Choice.targetId && p2Choice.heroId && p2Choice.targetId) {
-      if (battleTimer > 1) setBattleTimer(0);
-      const timer = setTimeout(handleSequenceStart, 500);
-      return () => clearTimeout(timer);
+    if (view === 'battle' && battlePhase === 'CHOOSE') {
+      const p1ReadyFlag = p1Choice.heroId && p1Choice.targetId;
+      const p2ReadyFlag = p2Choice.heroId && p2Choice.targetId;
+
+      if (p1ReadyFlag && p2ReadyFlag) {
+        if (battleTimer > 1) {
+          console.log("Both players ready, terminating timer early.");
+          setBattleTimer(0);
+        }
+        const timer = setTimeout(() => {
+          if (isHost || gameMode !== 'online-pvp') handleSequenceStart();
+        }, 800);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [p1Choice, p2Choice, battlePhase, view]);
+  }, [p1Choice, p2Choice, battlePhase, view, isHost, gameMode]);
 
   const handleSequenceStart = () => {
     if (gameMode === 'online-pvp' && !isHost) return;
@@ -724,7 +742,15 @@ function App() {
       const p1Rolls = p1HasAbyssal ? [r1_first, Math.floor(Math.random() * 6) + 1] : null;
       const p2Rolls = p2HasAbyssal ? [r2_first, Math.floor(Math.random() * 6) + 1] : null;
 
-      if (conn) conn.send({ type: 'SYNC_ABYSSAL_DICE', dice: { p1: p1Rolls, p2: p2Rolls } });
+      if (conn) conn.send({
+        type: 'SYNC_ABYSSAL_DICE',
+        dice: { p1: p1Rolls, p2: p2Rolls },
+        c1: computedP1,
+        c2: computedP2,
+        r1: r1_first,
+        r2: r2_first,
+        seed: seed
+      });
       setAbyssalDice({ p1: p1Rolls, p2: p2Rolls });
       setAbyssalChoice({ p1: null, p2: null });
       setBattlePhase('ABYSSAL_CHOICE');
@@ -745,8 +771,8 @@ function App() {
     executeSequence(r1_first, r2_first, computedP1, computedP2, seed);
   };
 
-  // New function to continue after Abyssal dice selection
   const continueAfterAbyssalChoice = () => {
+    if (!window.pendingSequence) return;
     const { computedP1, computedP2, r1_first, r2_first, seed } = window.pendingSequence;
     const p1Hero = battleData.p1.find(h => h.id === computedP1.heroId);
     const p2Hero = battleData.p2.find(h => h.id === computedP2.heroId);
@@ -756,21 +782,33 @@ function App() {
 
     if (abyssalDice.p1 && abyssalChoice.p1 !== null) {
       finalR1 = abyssalDice.p1[abyssalChoice.p1];
-      setBattleLog(prev => [...prev, `✅ P1 ${p1Hero.name} 選擇了骰子 ${finalR1}`]);
     }
-
     if (abyssalDice.p2 && abyssalChoice.p2 !== null) {
       finalR2 = abyssalDice.p2[abyssalChoice.p2];
-      setBattleLog(prev => [...prev, `✅ P2 ${p2Hero.name} 選擇了骰子 ${finalR2}`]);
     }
 
-    setAbyssalDice({ p1: null, p2: null });
-    setAbyssalChoice({ p1: null, p2: null });
-
-    if (gameMode === 'online-pvp' && isHost && conn) {
-      conn.send({ type: 'RUN_SEQUENCE', r1: finalR1, r2: finalR2, c1: computedP1, c2: computedP2, seed });
+    if (gameMode === 'online-pvp') {
+      if (isHost) {
+        // Host broadcasts the final dice and starts the sequence
+        if (conn) conn.send({ type: 'RUN_SEQUENCE', r1: finalR1, r2: finalR2, c1: computedP1, c2: computedP2, seed });
+        executeSequence(finalR1, finalR2, computedP1, computedP2, seed);
+      } else {
+        // Guest just resets UI and waits for host's RUN_SEQUENCE command
+        setAbyssalDice({ p1: null, p2: null });
+        setAbyssalChoice({ p1: null, p2: null });
+        setBattlePhase('SHOW_PICKS');
+      }
+    } else {
+      // Offline mode
+      executeSequence(finalR1, finalR2, computedP1, computedP2, seed);
     }
-    executeSequence(finalR1, finalR2, computedP1, computedP2, seed);
+
+    // Cleanup
+    if (isHost || gameMode !== 'online-pvp') {
+      setAbyssalDice({ p1: null, p2: null });
+      setAbyssalChoice({ p1: null, p2: null });
+      window.pendingSequence = null;
+    }
   };
 
   const executeSequence = async (r1, r2, finalP1Choice, finalP2Choice, seed) => {
@@ -918,15 +956,15 @@ function App() {
         return 'DONE';
       };
 
-      async function playStep(playerNum, roll, choice, oppRoll, oppChoice) {
+      async function playStep(playerNum, stepRoll, stepChoice, oppRoll, oppChoice) {
         const team = playerNum === 1 ? currentBattleData.p1 : currentBattleData.p2;
         const enemyTeam = playerNum === 1 ? currentBattleData.p2 : currentBattleData.p1;
-        const actor = team.find(h => h.id === choice.heroId);
-        const target = enemyTeam.find(h => h.id === choice.targetId) || enemyTeam.find(h => h.currentHp > 0);
+        const actor = team.find(h => h.id === stepChoice.heroId);
+        const target = enemyTeam.find(h => h.id === stepChoice.targetId) || enemyTeam.find(h => h.currentHp > 0);
 
         if (!actor || !aliveAtStart.has(actor.id)) return;
 
-        const action = actor.diceActions[roll];
+        const action = actor.diceActions[stepRoll];
         if (!action) return;
 
         const oppActor = enemyTeam.find(h => h.id === oppChoice.heroId);
@@ -938,11 +976,11 @@ function App() {
           setTimeout(() => {
             try {
               if (actor.statuses?.untargetable > 0) {
-                setBattleLog(prev => [...prev, `✨ ${actor.name} 處於不可選中狀態，影舞中...`]);
+                setBattleLog(prev => [...prev, `✨ ${pLabel} ${actor.name} 處於不可選中狀態，影舞中...`]);
                 resolve(); return;
               }
               if (actor.statuses?.stunned > 0) {
-                setBattleLog(prev => [...prev, `😵 ${actor.name} 被控中，無法行動！`]);
+                setBattleLog(prev => [...prev, `😵 ${pLabel} ${actor.name} 被控中，無法行動！`]);
                 resolve(); return;
               }
               if (action.type === 'ultimate') {
@@ -974,10 +1012,10 @@ function App() {
                   setTimeout(() => setEvadingHeroes([]), 1000);
 
                   // Raz Evade Logic: Roll again
-                  if (target.id === 'raz' && target.id === oppActor?.id && (oppChoice.diceActions[oppRoll]?.effect === 'EVADE_AGAIN')) {
+                  if (target.id === 'raz' && target.id === oppActor?.id && (enemyTeam.find(h => h.id === oppChoice.heroId).diceActions[oppRoll]?.effect === 'EVADE_AGAIN')) {
                     const razPlayerNum = playerNum === 1 ? 2 : 1;
-                    const razChoice = razPlayerNum === 1 ? c1 : c2;
-                    const opponentChoice = razPlayerNum === 1 ? c2 : c1;
+                    const razChoice = razPlayerNum === 1 ? finalP1Choice : finalP2Choice;
+                    const opponentChoice = razPlayerNum === 1 ? finalP2Choice : finalP1Choice;
                     const extraRoll = Math.floor(prng() * 6) + 1;
                     setBattleLog(prev => [...prev, `🔥 [${target.name}] 閃避成功，鬥志高昂！再次發動突襲！`]);
                     setBattleData(JSON.parse(JSON.stringify(currentBattleData))); // Update UI for the log/vfx
@@ -996,7 +1034,7 @@ function App() {
                   let dmg = action.value || 1;
 
                   // He Passive
-                  if (actor.id === 'he' && [1, 2, 3].includes(roll)) {
+                  if (actor.id === 'he' && [1, 2, 3].includes(stepRoll)) {
                     if (prng() > 0.5) {
                       if (!target.statuses?.superArmor) {
                         target.statuses.stunned = Math.max(target.statuses.stunned || 0, 1);
@@ -1060,7 +1098,7 @@ function App() {
                     const extraRoll = Math.floor(prng() * 6) + 1;
                     setTimeout(async () => {
                       setDiceResults(prev => ({ ...prev, [playerNum === 1 ? 'p1' : 'p2']: extraRoll }));
-                      await playStep(playerNum, extraRoll, choice, oppRoll, oppChoice);
+                      await playStep(playerNum, extraRoll, playerNum === 1 ? finalP1Choice : finalP2Choice, oppRoll, playerNum === 1 ? finalP2Choice : finalP1Choice);
                       resolve();
                     }, 1200);
                     return;
