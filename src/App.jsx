@@ -1007,6 +1007,11 @@ function App() {
                     }
                   });
                   setBattleLog(prev => [...prev, `${logHeader}大招 [${skillName}] 掃蕩全場！`]);
+                  if (action.heal) {
+                    const oldHp = actor.currentHp;
+                    actor.currentHp = Math.min(actor.hp, actor.currentHp + action.heal);
+                    setBattleLog(prev => [...prev, `🩸 ${actor.name} 吸收生命，回復了 ${actor.currentHp - oldHp} 點 HP！`]);
+                  }
                 } else if (target && action.value > 0) {
                   let fDmg = action.value;
                   if (actor.id === 'errol' && actor.minaErrolBond) {
