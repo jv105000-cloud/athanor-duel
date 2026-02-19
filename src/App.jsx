@@ -50,6 +50,11 @@ function App() {
 
   const allHeroes = factions.flatMap(f => f.heroes.map(h => ({ ...h, factionId: f.id })));
 
+  const connectionStatusRef = useRef('OFFLINE');
+  useEffect(() => {
+    connectionStatusRef.current = connectionStatus;
+  }, [connectionStatus]);
+
   const getTeamSize = (team) => Object.values(team).filter(h => h !== null).length;
 
   // AI Selection Draft
@@ -366,23 +371,27 @@ function App() {
   const processingTurnRef = useRef(false);
 
   const connectToPeer = () => {
-    if (!targetIdInput) return;
+    const cleanId = targetIdInput.trim();
+    if (!cleanId) {
+      alert("請輸入房號");
+      return;
+    }
     setConnectionStatus('CONNECTING');
 
     // 超時處理：10 秒沒連上就放棄
     const timeout = setTimeout(() => {
-      if (connectionStatus === 'CONNECTING') {
+      if (connectionStatusRef.current === 'CONNECTING') {
         setConnectionStatus('OFFLINE');
         alert("連線超時，請檢查房號是否正確，或請好友重新整理網頁。");
       }
-    }, 10000);
+    }, 12000);
 
-    const c = peer.connect(targetIdInput);
+    const c = peer.connect(cleanId);
 
     c.on('error', (err) => {
       clearTimeout(timeout);
       console.error('Join error:', err);
-      alert("無法連入該房號，請確認 ID 是否輸入正確。");
+      alert("無法連入該房號，請確認 ID 是否正確且好友在線上。");
       setConnectionStatus('OFFLINE');
     });
 
