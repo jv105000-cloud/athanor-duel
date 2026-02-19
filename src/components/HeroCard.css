@@ -1,0 +1,497 @@
+.hero-card-container {
+    width: 420px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    background: rgba(20, 22, 30, 0.95);
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+    padding: 0 !important;
+}
+
+.hero-card-compact {
+    width: 200px;
+    height: 220px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.hero-card-compact:hover {
+    transform: scale(1.05);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+/* Faction Hover Borders & Glow */
+.hero-card-compact.temple-of-light:hover {
+    border: 2px solid #fbbf24;
+    box-shadow: 0 0 25px rgba(251, 191, 36, 0.8);
+}
+
+.hero-card-compact.abyssal-chaos:hover {
+    border: 2px solid #a82eeb;
+    box-shadow: 0 0 25px rgba(168, 46, 235, 0.8);
+}
+
+.hero-card-compact.afata:hover {
+    border: 2px solid #4ade80;
+    box-shadow: 0 0 25px rgba(74, 222, 128, 0.8);
+}
+
+.hero-card-compact.ronin:hover {
+    border: 2px solid #60a5fa;
+    box-shadow: 0 0 25px rgba(96, 165, 250, 0.8);
+}
+
+.compact-img-wrap {
+    height: 120px;
+    overflow: hidden;
+}
+
+.compact-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.compact-info {
+    padding: 1rem;
+    text-align: center;
+}
+
+.compact-info h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+    color: #fff;
+}
+
+.click-hint {
+    font-size: 0.75rem;
+    color: var(--accent-color);
+    opacity: 0.8;
+}
+
+.hero-card-container.expanded {
+    position: relative;
+    animation: expandIn 0.4s ease-out;
+}
+
+@keyframes expandIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.close-btn:hover {
+    background: var(--accent-color);
+    color: #000;
+}
+
+.hero-card-compact.defeated {
+    filter: grayscale(1) opacity(0.5);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.hero-card-compact.is-suppressed {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.8), inset 0 0 40px rgba(0, 0, 0, 0.6);
+    border: 2px solid #8b5cf6;
+}
+
+.hero-card-compact.is-suppressed::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(88, 28, 135, 0.2);
+    pointer-events: none;
+    animation: pulse 2s infinite;
+}
+
+.hp-bar-container {
+    width: 100%;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    margin-top: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.hp-bar-fill {
+    height: 100%;
+    background: linear-gradient(to right, #ef4444, #f87171);
+    transition: width 0.3s ease;
+}
+
+.hp-text {
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.6rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 1px 2px #000;
+}
+
+.selection-overlay,
+.target-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 900;
+    color: #000;
+    z-index: 5;
+}
+
+.selection-overlay {
+    background: #f87171;
+    box-shadow: 0 0 10px rgba(248, 113, 113, 0.5);
+}
+
+.target-overlay {
+    background: #60a5fa;
+    box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+}
+
+.stun-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    background: #facc15;
+    color: #000;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 1.2rem;
+    font-weight: 900;
+    z-index: 100;
+    border: 2px solid #000;
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.8);
+    pointer-events: none;
+    animation: stunPulse 0.5s infinite alternate;
+}
+
+@keyframes stunPulse {
+    from {
+        transform: translate(-50%, -50%) rotate(-15deg) scale(1);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(-15deg) scale(1.1);
+    }
+}
+
+.status-container {
+    position: absolute;
+    top: 40px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 6;
+}
+
+.status-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    animation: pulse 1s infinite;
+}
+
+.status-badge.silenced {
+    background: #94a3b8;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.status-badge.invincible {
+    background: #fbbf24;
+    color: #000;
+    border: 1px solid #000;
+    box-shadow: 0 0 10px gold;
+}
+
+.status-badge.stunned {
+    background: #ef4444;
+    color: white;
+    border: 1px solid white;
+}
+
+.status-badge.pos-tag {
+    background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+    color: #000;
+    font-weight: 900;
+    text-shadow: none;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.status-badge.speed {
+    background: #38bdf8;
+    color: white;
+    border: 1px solid white;
+    box-shadow: 0 0 10px #38bdf8;
+}
+
+.status-badge.regen {
+    background: #22c55e;
+    color: white;
+    border: 1px solid #14532d;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
+}
+
+.hero-card-compact.selected-act {
+    border: 2px solid #f87171;
+    transform: scale(1.05);
+}
+
+.hero-card-compact.targeted-act {
+    border: 2px solid #60a5fa;
+    transform: scale(1.05);
+}
+
+.floating-detail {
+    position: fixed !important;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) !important;
+    z-index: 1000;
+    box-shadow: 0 0 100px rgba(0, 0, 0, 0.8);
+}
+
+.hero-card-image-wrap {
+    height: 260px;
+    /* 回到原本的高高度 */
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* 回到滿版貼合，不留白 */
+}
+
+.hero-voice-footer {
+    margin-top: 1.5rem;
+    padding: 1.2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    text-align: center;
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--accent-color);
+    border-left: 5px solid var(--accent-color);
+}
+
+.hero-info {
+    padding: 2.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.hero-info h3 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: #fff;
+    text-align: center;
+    letter-spacing: 0.1rem;
+}
+
+.hero-passive {
+    background: rgba(201, 168, 106, 0.1);
+    border: 1px solid rgba(201, 168, 106, 0.2);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.passive-tag {
+    color: var(--accent-color);
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+.passive-desc {
+    font-size: 1rem;
+    opacity: 0.9;
+    color: #eee;
+}
+
+.hero-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 2rem;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-item .label {
+    font-size: 1rem;
+    color: #888;
+}
+
+.stat-item .value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--accent-color);
+}
+
+.dice-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.dice-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.8rem 1.2rem;
+    border-radius: 12px;
+    font-size: 1.2rem;
+}
+
+.dice-num {
+    width: 34px;
+    height: 34px;
+    background: #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+.action-type {
+    font-weight: 800;
+    font-size: 0.9rem;
+    padding: 4px 12px;
+    border-radius: 6px;
+}
+
+.action-type.attack {
+    color: #f87171;
+    border: 1px solid #f87171;
+}
+
+.action-type.ultimate {
+    color: #fbbf24;
+    border: 1px solid #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.action-type.evade {
+    color: #34d399;
+    border: 1px solid #34d399;
+}
+
+.action-type.block {
+    color: #60a5fa;
+    border: 1px solid #60a5fa;
+}
+
+.action-val {
+    margin-left: auto;
+    font-weight: 800;
+    font-size: 1.4rem;
+}
+
+.action-desc {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+/* Faction Overrides */
+.temple-of-light .dice-num {
+    background: var(--faction-light-secondary);
+    color: #000;
+}
+
+.temple-of-light .value,
+.temple-of-light .hero-voice-footer {
+    color: var(--faction-light-primary);
+    border-left-color: var(--faction-light-primary);
+}
+
+.abyssal-chaos .dice-num {
+    background: var(--faction-abyss-secondary);
+}
+
+.abyssal-chaos .value,
+.abyssal-chaos .hero-voice-footer {
+    color: var(--faction-abyss-primary);
+    border-left-color: var(--faction-abyss-primary);
+}
+
+.afata .dice-num {
+    background: var(--faction-forest-secondary);
+}
+
+.afata .value,
+.afata .hero-voice-footer {
+    color: var(--faction-forest-primary);
+    border-left-color: var(--faction-forest-primary);
+}
+
+.ronin .dice-num {
+    background: var(--faction-ronin-secondary);
+}
+
+.ronin .value,
+.ronin .hero-voice-footer {
+    color: var(--faction-ronin-primary);
+    border-left-color: var(--faction-ronin-primary);
+}

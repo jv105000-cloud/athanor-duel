@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">艾森諾對決</string>
+    <string name="title_activity_main">艾森諾對決</string>
+    <string name="package_name">com.athanor.duel</string>
+    <string name="custom_url_scheme">com.athanor.duel</string>
+</resources>

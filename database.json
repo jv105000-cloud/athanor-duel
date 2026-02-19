@@ -1,0 +1,29 @@
+[
+  {
+    "account": "王宇囉嗦的菜菜?",
+    "password": "990330",
+    "holyPearl": 20,
+    "magicCore": 70,
+    "leaf": 30,
+    "goldCoin": 20,
+    "createdAt": "2026-02-11T14:55:40.425Z"
+  },
+  {
+    "account": "666",
+    "password": "777",
+    "holyPearl": 0,
+    "magicCore": 10,
+    "leaf": 0,
+    "goldCoin": 20,
+    "createdAt": "2026-02-12T02:28:51.941Z"
+  },
+  {
+    "account": "999",
+    "password": "999",
+    "holyPearl": 0,
+    "magicCore": 0,
+    "leaf": 10,
+    "goldCoin": 0,
+    "createdAt": "2026-02-12T02:45:30.267Z"
+  }
+]
