@@ -367,6 +367,7 @@ function App() {
     setBattleTimer(3);
     setP1Choice({ heroId: null, targetId: null });
     setP2Choice({ heroId: null, targetId: null });
+    setOppReady(false);
     setDiceResults({ p1: null, p2: null });
 
     // Increment round and add separator instead of clearing
@@ -641,16 +642,22 @@ function App() {
 
   useEffect(() => {
     if (view === 'battle' && battlePhase === 'CHOOSE') {
-      const p1ReadyFlag = p1Choice.heroId && p1Choice.targetId;
-      const p2ReadyFlag = p2Choice.heroId && p2Choice.targetId;
+      const p1ReadyFlag = p1Choice && p1Choice.heroId && p1Choice.targetId;
+      const p2ReadyFlag = p2Choice && p2Choice.heroId && p2Choice.targetId;
 
       if (p1ReadyFlag && p2ReadyFlag) {
         if (battleTimer > 1) {
           console.log("Both players ready, terminating timer early.");
           setBattleTimer(0);
         }
+        // Use a ref to prevent multiple triggerings
+        if (processingTurnRef.current) return;
+
         const timer = setTimeout(() => {
-          if (isHost || gameMode !== 'online-pvp') handleSequenceStart();
+          if (isHost || gameMode !== 'online-pvp') {
+            console.log("Triggering handleSequenceStart from Ready Effect");
+            handleSequenceStart();
+          }
         }, 800);
         return () => clearTimeout(timer);
       }
@@ -847,7 +854,7 @@ function App() {
       }
 
       if (remaining > 0) {
-        victim.currentHp -= remaining;
+        victim.currentHp = Math.max(0, victim.currentHp - remaining);
         totalDealt += remaining;
 
         // Mina Reflect Logic
@@ -962,15 +969,26 @@ function App() {
         const actor = team.find(h => h.id === stepChoice.heroId);
         const target = enemyTeam.find(h => h.id === stepChoice.targetId) || enemyTeam.find(h => h.currentHp > 0);
 
-        if (!actor || !aliveAtStart.has(actor.id)) return;
+        if (!actor) {
+          console.warn(`Actor not found for player ${playerNum}`, stepChoice);
+          return;
+        }
+        if (actor.currentHp <= 0 || !aliveAtStart.has(actor.id)) {
+          console.log(`Actor ${actor.name} is already defeated or was dead at start.`);
+          return;
+        }
 
         const action = actor.diceActions[stepRoll];
-        if (!action) return;
+        if (!action) {
+          console.warn(`Action not found for roll ${stepRoll}`, actor.name);
+          return;
+        }
 
-        const oppActor = enemyTeam.find(h => h.id === oppChoice.heroId);
+        const oppActor = oppChoice?.heroId ? enemyTeam.find(h => h.id === oppChoice.heroId) : null;
         const amIPlayer = (gameMode === 'online-pvp') ? (isHost ? playerNum === 1 : playerNum === 2) : (playerNum === 1);
         const pLabel = amIPlayer ? "【我方】" : "【對手】";
-        let logHeader = `${pLabel} ${actor.name} ➡️ ${target?.name || '敵人'}：`;
+        const targetName = target?.name || '敵人';
+        let logHeader = `${pLabel} ${actor.name} ➡️ ${targetName}：`;
 
         return new Promise(resolve => {
           setTimeout(() => {
@@ -1012,7 +1030,8 @@ function App() {
                   setTimeout(() => setEvadingHeroes([]), 1000);
 
                   // Raz Evade Logic: Roll again
-                  if (target.id === 'raz' && target.id === oppActor?.id && (enemyTeam.find(h => h.id === oppChoice.heroId).diceActions[oppRoll]?.effect === 'EVADE_AGAIN')) {
+                  const oppSkill = oppChoice?.heroId ? enemyTeam.find(h => h.id === oppChoice.heroId)?.diceActions?.[oppRoll] : null;
+                  if (target.id === 'raz' && target.id === oppActor?.id && oppSkill?.effect === 'EVADE_AGAIN') {
                     const razPlayerNum = playerNum === 1 ? 2 : 1;
                     const razChoice = razPlayerNum === 1 ? finalP1Choice : finalP2Choice;
                     const opponentChoice = razPlayerNum === 1 ? finalP2Choice : finalP1Choice;
@@ -1032,6 +1051,11 @@ function App() {
                   triggerVfx(target.id, 'shield');
                 } else if (target) {
                   let dmg = action.value || 1;
+
+                  if (actor.statuses?.silenced > 0) {
+                    setBattleLog(prev => [...prev, `${logHeader}被沉默封印，無法造成傷害！`]);
+                    resolve(); return;
+                  }
 
                   // He Passive
                   if (actor.id === 'he' && [1, 2, 3].includes(stepRoll)) {

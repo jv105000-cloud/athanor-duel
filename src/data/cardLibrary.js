@@ -66,7 +66,7 @@ export const factions = [
                     3: { type: 'attack', value: 3, name: '天降正義' },
                     4: { type: 'ultimate', name: '天道', effect: 'INVINCIBLE_STUN', duration: 5, stunDuration: 2, description: '進入5回合無敵狀態(自動格擋且無視非真傷)，且攻擊者會被暈眩2回合' },
                     5: { type: 'evade', name: '閃避' },
-                    6: { type: 'block', name: '格檔' }
+                    6: { type: 'block', name: '道心' }
                 },
                 image: '/assets/omega.png'
             },
@@ -109,7 +109,7 @@ export const factions = [
                     3: { type: 'attack', value: 2, name: '地獄鐮刀' },
                     4: { type: 'ultimate', name: '惡魔反甲', effect: 'MINA_REFLECT', description: '受傷時對手也會受到相同傷害持續整局，再次使用則反傷加倍。' },
                     5: { type: 'evade', name: '閃避' },
-                    6: { type: 'block', name: '格檔' }
+                    6: { type: 'block', name: '魔甲' }
                 },
                 image: '/assets/mina.png',
                 imageSettings: { objectPosition: 'center 10%' }
