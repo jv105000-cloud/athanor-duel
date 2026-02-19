@@ -236,18 +236,33 @@ function App() {
   };
 
   const setupConnection = (connection) => {
-    connection.on('open', () => {
+    const handleOpen = () => {
+      console.log("PeerJS Connection Opened!");
       setConn(connection);
       setConnectionStatus('CONNECTED');
-    });
+    };
+
+    if (connection.open) {
+      handleOpen();
+    } else {
+      connection.on('open', handleOpen);
+    }
+
     connection.on('data', (data) => {
       handleRemoteData(data);
     });
+
     connection.on('close', () => {
+      console.log("PeerJS Connection Closed.");
       setConnectionStatus('OFFLINE');
       setConn(null);
       alert("連線已中斷");
       setView('lobby');
+    });
+
+    connection.on('error', (err) => {
+      console.error("Connection Data Error:", err);
+      setConnectionStatus('OFFLINE');
     });
   };
 
