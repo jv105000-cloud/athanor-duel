@@ -108,9 +108,32 @@ function App() {
       }
     });
 
-    newPeer.on('open', (id) => setMyId(id));
+    newPeer.on('open', (id) => {
+      setMyId(id);
+      setConnectionStatus('OFFLINE');
+    });
+
+    newPeer.on('error', (err) => {
+      console.error('PeerJS Error:', err);
+      // Don't alert for expected disconnects but alert for setup errors
+      if (err.type === 'peer-unavailable') {
+        alert("找不到該房號，請確認好友的 ID 是否輸入正確。");
+        setConnectionStatus('OFFLINE');
+      } else if (err.type === 'network') {
+        alert("網路連線不穩定，請檢查您的網路設定。");
+        setConnectionStatus('OFFLINE');
+      }
+    });
+
     newPeer.on('connection', (c) => {
-      if (connRef.current) { c.close(); return; } // Use Ref check to avoid stale closures
+      if (connRef.current) { c.close(); return; }
+
+      c.on('error', (err) => {
+        console.error('Connection Error:', err);
+        alert("與好友連線發生錯誤");
+        setConnectionStatus('OFFLINE');
+      });
+
       setupConnection(c);
       setIsHost(true);
       setGameMode('online-pvp');
@@ -330,11 +353,31 @@ function App() {
   const connectToPeer = () => {
     if (!targetIdInput) return;
     setConnectionStatus('CONNECTING');
+
+    // 超時處理：10 秒沒連上就放棄
+    const timeout = setTimeout(() => {
+      if (connectionStatus === 'CONNECTING') {
+        setConnectionStatus('OFFLINE');
+        alert("連線超時，請檢查房號是否正確，或請好友重新整理網頁。");
+      }
+    }, 10000);
+
     const c = peer.connect(targetIdInput);
-    setupConnection(c);
-    setIsHost(false);
-    setGameMode('online-pvp');
-    setView('selection');
+
+    c.on('error', (err) => {
+      clearTimeout(timeout);
+      console.error('Join error:', err);
+      alert("無法連入該房號，請確認 ID 是否輸入正確。");
+      setConnectionStatus('OFFLINE');
+    });
+
+    c.on('open', () => {
+      clearTimeout(timeout);
+      setupConnection(c);
+      setIsHost(false);
+      setGameMode('online-pvp');
+      setView('selection');
+    });
   };
 
   const startBattle = () => {
