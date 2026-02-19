@@ -297,6 +297,9 @@ function App() {
           setP1Choice(prev => ({ ...prev, ...data }));
         }
         break;
+      case 'SYNC_READY':
+        setOppReady(data.ready);
+        break;
       case 'RUN_SEQUENCE':
         executeSequence(data.r1, data.r2, data.c1, data.c2, data.seed);
         break;
@@ -365,6 +368,7 @@ function App() {
       return next;
     });
 
+    setOppReady(false);
     processingTurnRef.current = false; // Unlock for next turn
   };
 
@@ -881,7 +885,8 @@ function App() {
           setBattleLog(prev => [...prev, `⛰️ [${action.name}]！${actor.name} 解放大地之力，本回合絕對防禦且預備岩盾！`]);
         } else if (action.effect === 'MINA_REFLECT') {
           actor.minaReflectMult = (actor.minaReflectMult || 0) === 0 ? 1 : (actor.minaReflectMult * 2);
-          setBattleLog(prev => [...prev, `[P${playerNum}] ${actor.name} 開啟 [${action.name}]！${actor.minaReflectMult > 1 ? '反擊加倍！' : ''}反傷效率：${actor.minaReflectMult * 100}%`]);
+          const pLabel = (gameMode === 'online-pvp') ? ((isHost && playerNum === 1) || (!isHost && playerNum === 2) ? "【我方】" : "【對手】") : `[P${playerNum}]`;
+          setBattleLog(prev => [...prev, `${pLabel} ${actor.name} 開啟 [${action.name}]！${actor.minaReflectMult > 1 ? '反擊加倍！' : ''}`]);
         } else if (action.effect === 'UNTARGETABLE_2_TURNS') {
           actor.statuses.untargetable = 2;
           actor.pendingUltDmg = action.value || 5;
@@ -925,7 +930,9 @@ function App() {
         if (!action) return;
 
         const oppActor = enemyTeam.find(h => h.id === oppChoice.heroId);
-        let logHeader = `[P${playerNum}] ${actor.name} ➡️ ${target?.name || '敵人'}：`;
+        const amIPlayer = (gameMode === 'online-pvp') ? (isHost ? playerNum === 1 : playerNum === 2) : (playerNum === 1);
+        const pLabel = amIPlayer ? "【我方】" : "【對手】";
+        let logHeader = `${pLabel} ${actor.name} ➡️ ${target?.name || '敵人'}：`;
 
         return new Promise(resolve => {
           setTimeout(() => {
@@ -1274,16 +1281,20 @@ function App() {
   const renderBattle = () => {
     if (!battleData) return null;
 
-    const renderTeam = (team, isP1) => {
+    const renderTeam = (team, teamIsP1) => {
       // Logic for grid placement based on position
       const posMap = { front: 0, roam: 1, back: 2 };
       const sorted = [...team].sort((a, b) => posMap[a.pos] - posMap[b.pos]);
 
+      // Determine view perspective markers
+      const isMyTeam = (gameMode === 'online-pvp') ? (isHost ? teamIsP1 : !teamIsP1) : true;
+      const myChoice = (gameMode === 'online-pvp') ? (isHost ? p1Choice : p2Choice) : (teamIsP1 ? p1Choice : p2Choice);
+
       return sorted.map(h => (
         <HeroCard
           key={h.id} hero={h} factionId={h.factionId} isInBattle={true} hp={h.currentHp}
-          isTargeted={(gameMode === 'online-pvp' && !isHost) ? (p2Choice.targetId === h.id) : (p1Choice.targetId === h.id)}
-          isSelected={(gameMode === 'online-pvp' && !isHost) ? (p2Choice.heroId === h.id) : (p1Choice.heroId === h.id)}
+          isTargeted={myChoice.targetId === h.id}
+          isSelected={myChoice.heroId === h.id}
           activeVfx={activeVfx[h.id]} isEvading={evadingHeroes.includes(h.id)}
           isSmashing={smashingHeroId === h.id}
           statuses={h.statuses}
@@ -1339,8 +1350,12 @@ function App() {
                   setBattleLog(prev => [...prev, `❌ ${h.name} ${reason}，本回合無法作為行動角色！`]);
                   return;
                 }
-                setP1Choice(prev => ({ ...prev, heroId: h.id }));
-                conn.send({ type: 'SYNC_CHOICE', heroId: h.id });
+                setP1Choice(prev => {
+                  const next = { ...prev, heroId: h.id };
+                  conn.send({ type: 'SYNC_CHOICE', heroId: h.id });
+                  if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  return next;
+                });
               }
               // I am Host (P1) picking Enemy (P2)
               else if (isHost && !isP1) {
@@ -1365,8 +1380,12 @@ function App() {
                   setBattleLog(prev => [...prev, `🎯 ${h.name} 正被壓制中，護衛失效！隊友可直接發動攻擊！`]);
                 }
 
-                setP1Choice(prev => ({ ...prev, targetId: h.id }));
-                conn.send({ type: 'SYNC_CHOICE', heroId: p1Choice.heroId, targetId: h.id });
+                setP1Choice(prev => {
+                  const next = { ...prev, targetId: h.id };
+                  conn.send({ type: 'SYNC_CHOICE', heroId: p1Choice.heroId, targetId: h.id });
+                  if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  return next;
+                });
               }
               // I am Guest (P2)
               else if (!isHost && !isP1) {
@@ -1376,8 +1395,12 @@ function App() {
                   setBattleLog(prev => [...prev, `❌ ${h.name} ${reason}，本回合無法作為行動角色！`]);
                   return;
                 }
-                setP2Choice(prev => ({ ...prev, heroId: h.id }));
-                conn.send({ type: 'SYNC_CHOICE', heroId: h.id });
+                setP2Choice(prev => {
+                  const next = { ...prev, heroId: h.id };
+                  conn.send({ type: 'SYNC_CHOICE', heroId: h.id });
+                  if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  return next;
+                });
               }
               // I am Guest (P2) picking Enemy (P1)
               else if (!isHost && isP1) {
@@ -1402,8 +1425,12 @@ function App() {
                   setBattleLog(prev => [...prev, `🎯 ${h.name} 正被壓制中，護衛失效！隊友可直接發動攻擊！`]);
                 }
 
-                setP2Choice(prev => ({ ...prev, targetId: h.id }));
-                conn.send({ type: 'SYNC_CHOICE', heroId: p2Choice.heroId, targetId: h.id });
+                setP2Choice(prev => {
+                  const next = { ...prev, targetId: h.id };
+                  conn.send({ type: 'SYNC_CHOICE', heroId: p2Choice.heroId, targetId: h.id });
+                  if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  return next;
+                });
               }
               return;
             }
@@ -1555,18 +1582,16 @@ function App() {
           {battlePhase === 'CHOOSE' && (
             <div className="turn-indicator">
               <div className="timer-circle">{battleTimer}</div>
-              <p>
-                {/* Status Indicator Logic:
-                    Online Guest: Show P2 (Self) and P1 (Enemy) status.
-                    Host/Local: Show P1 (Self) and P2 (Enemy) status.
-                */}
-                {(gameMode === 'online-pvp' && !isHost)
-                  ? (p2Choice.heroId ? '✅ 英雄就緒' : '👉 請選擇己方英雄')
-                  : (p1Choice.heroId ? '✅ 英雄就緒' : '👉 請選擇己方英雄')}
-                |
-                {(gameMode === 'online-pvp' && !isHost)
-                  ? (p2Choice.targetId ? '✅ 目標已定' : '🎯 請選擇敵方目標')
-                  : (p1Choice.targetId ? '✅ 目標已定' : '🎯 請選擇敵方目標')}
+              <div className="online-ready-status">
+                <div className="status-item self">
+                  【我方】: {((gameMode === 'online-pvp' && !isHost) ? (p2Choice.heroId && p2Choice.targetId) : (p1Choice.heroId && p1Choice.targetId)) ? '✅ 已就緒' : '⏳ 行動中...'}
+                </div>
+                <div className="status-item opp">
+                  {gameMode === 'online-pvp' ? `【對手】: ${oppReady ? '✅ 已就緒' : '⏳ 思考中...'}` : `【AI】: ✅ 已就緒`}
+                </div>
+              </div>
+              <p className="pick-guide-hint">
+                {((gameMode === 'online-pvp' && !isHost) ? p2Choice.heroId : p1Choice.heroId) ? '🎯 請點擊敵方目標完成配置' : '👉 請先點擊己方英雄'}
               </p>
             </div>
           )}

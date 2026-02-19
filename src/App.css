@@ -2075,3 +2075,31 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+.online-ready-status {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin: 10px 0;
+  font-size: 1.1rem;
+}
+
+.status-item.self {
+  color: #4ade80;
+  font-weight: bold;
+}
+
+.status-item.opp {
+  color: #fbbf24;
+}
+
+.pick-guide-hint {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  animation: pickPulse 2s infinite;
+ font-weight: 500;
+}
+
+@keyframes pickPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
