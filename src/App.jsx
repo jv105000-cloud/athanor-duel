@@ -1344,93 +1344,202 @@ function App() {
     if (!battleData) return null;
 
     const renderTeam = (team, teamIsP1) => {
-      // Logic for grid placement based on position
       const posMap = { front: 0, roam: 1, back: 2 };
       const sorted = [...team].sort((a, b) => posMap[a.pos] - posMap[b.pos]);
 
-      // Determine view perspective markers
-      const isMyTeam = (gameMode === 'online-pvp') ? (isHost ? teamIsP1 : !teamIsP1) : true;
-      const myChoice = (gameMode === 'online-pvp') ? (isHost ? p1Choice : p2Choice) : (teamIsP1 ? p1Choice : p2Choice);
+      return sorted.map(h => {
+        // Determine view perspective markers (Action/Target highlights)
+        let isSel = false;
+        let isTar = false;
 
-      return sorted.map(h => (
-        <HeroCard
-          key={h.id} hero={h} factionId={h.factionId} isInBattle={true} hp={h.currentHp}
-          isTargeted={myChoice.targetId === h.id}
-          isSelected={myChoice.heroId === h.id}
-          activeVfx={activeVfx[h.id]} isEvading={evadingHeroes.includes(h.id)}
-          isSmashing={smashingHeroId === h.id}
-          statuses={h.statuses}
-          shield={h.shield}
-          onClick={() => {
-            if (battlePhase === 'ULT_TARGETING') {
-              const { pId } = pendingUltSelection;
-              const amIActivating = (gameMode === 'online-pvp') ? (isHost ? pId === 1 : pId === 2) : (pId === 1);
-              const isTargetingEnemy = (gameMode === 'online-pvp') ? (isHost ? !teamIsP1 : teamIsP1) : !teamIsP1;
+        const isRevealPhase = (battlePhase !== 'CHOOSE' && battlePhase !== 'PRE_ROUND' && battlePhase !== 'ULT_TARGETING');
 
-              if (amIActivating && isTargetingEnemy) {
-                // Manual Selection logic
-                if (pendingUltSelection) {
-                  const { actorId, action, currentBattleData: draftBD } = pendingUltSelection;
-                  // Use the draft from the sequence, NOT the stale battleData state
-                  const currentBattleData = JSON.parse(JSON.stringify(draftBD || battleData));
-                  const team = pId === 1 ? currentBattleData.p1 : currentBattleData.p2;
-                  const actor = team.find(x => x.id === actorId);
-                  const enemyTeam = pId === 1 ? currentBattleData.p2 : currentBattleData.p1;
-                  const target = enemyTeam.find(x => x.id === h.id);
+        if (isRevealPhase) {
+          // During reveal phase, show all choices so everyone sees what's happening
+          if (teamIsP1) {
+            isSel = p1Choice.heroId === h.id;
+            isTar = p2Choice.targetId === h.id;
+          } else {
+            isSel = p2Choice.heroId === h.id;
+            isTar = p1Choice.targetId === h.id;
+          }
+        } else {
+          // Private decision phase: ONLY show local player's markers
+          if (gameMode === 'online-pvp') {
+            if (isHost) {
+              // I am Host (P1)
+              if (teamIsP1) isSel = p1Choice.heroId === h.id;
+              else isTar = p1Choice.targetId === h.id;
+            } else {
+              // I am Guest (P2)
+              if (!teamIsP1) isSel = p2Choice.heroId === h.id;
+              else isTar = p2Choice.targetId === h.id;
+            }
+          } else if (gameMode === 'vs-ai') {
+            // Player is P1, Hide AI (P2)
+            if (teamIsP1) isSel = p1Choice.heroId === h.id;
+            else isTar = p1Choice.targetId === h.id;
+          } else {
+            // Local PVP: Show both as it's shared screen
+            if (teamIsP1) {
+              isSel = p1Choice.heroId === h.id;
+              isTar = p2Choice.targetId === h.id;
+            } else {
+              isSel = p2Choice.heroId === h.id;
+              isTar = p1Choice.targetId === h.id;
+            }
+          }
+        }
 
-                  if (target && target.currentHp > 0) {
-                    const suppressDur = action.duration || 3;
-                    target.statuses.stunned = suppressDur;
-                    target.suppressedBy = actor.id;
-                    actor.statuses.stunned = suppressDur;
-                    actor.isChannelingSuppression = true;
-                    actor.suppressingTargetId = target.id;
+        return (
+          <HeroCard
+            key={h.id} hero={h} factionId={h.factionId} isInBattle={true} hp={h.currentHp}
+            isTargeted={isTar}
+            isSelected={isSel}
+            activeVfx={activeVfx[h.id]} isEvading={evadingHeroes.includes(h.id)}
+            isSmashing={smashingHeroId === h.id}
+            statuses={h.statuses}
+            shield={h.shield}
+            onClick={() => {
+              if (battlePhase === 'ULT_TARGETING') {
+                const { pId } = pendingUltSelection;
+                const amIActivating = (gameMode === 'online-pvp') ? (isHost ? pId === 1 : pId === 2) : (pId === 1);
+                const isTargetingEnemy = (gameMode === 'online-pvp') ? (isHost ? !teamIsP1 : teamIsP1) : !teamIsP1;
 
-                    setBattleLog(prev => [...prev, `💀 [${action.name}]！我方手動選擇壓制了 ${target.name}！`]);
-                    setBattleData(JSON.parse(JSON.stringify(currentBattleData)));
-                    setPendingUltSelection(null);
-                    setBattlePhase('ACTION_ANIM');
+                if (amIActivating && isTargetingEnemy) {
+                  // Manual Selection logic
+                  if (pendingUltSelection) {
+                    const { actorId, action, currentBattleData: draftBD } = pendingUltSelection;
+                    const currentBattleData = JSON.parse(JSON.stringify(draftBD || battleData));
+                    const teamInLoop = pId === 1 ? currentBattleData.p1 : currentBattleData.p2;
+                    const actor = teamInLoop.find(x => x.id === actorId);
+                    const enemyTeam = pId === 1 ? currentBattleData.p2 : currentBattleData.p1;
+                    const target = enemyTeam.find(x => x.id === h.id);
 
-                    if (window.pendingSequenceResume) {
-                      if (gameMode === 'online-pvp' && conn) {
-                        conn.send({ type: 'SYNC_ULT_TARGET', targetId: target.id });
+                    if (target && target.currentHp > 0) {
+                      const suppressDur = action.duration || 3;
+                      target.statuses.stunned = suppressDur;
+                      target.suppressedBy = actor.id;
+                      actor.statuses.stunned = suppressDur;
+                      actor.isChannelingSuppression = true;
+                      actor.suppressingTargetId = target.id;
+
+                      setBattleLog(prev => [...prev, `💀 [${action.name}]！我方手動選擇壓制了 ${target.name}！`]);
+                      setBattleData(JSON.parse(JSON.stringify(currentBattleData)));
+                      setPendingUltSelection(null);
+                      setBattlePhase('ACTION_ANIM');
+
+                      if (window.pendingSequenceResume) {
+                        if (gameMode === 'online-pvp' && conn) {
+                          conn.send({ type: 'SYNC_ULT_TARGET', targetId: target.id });
+                        }
+                        window.pendingSequenceResume(currentBattleData);
+                        window.pendingSequenceResume = null;
                       }
-                      window.pendingSequenceResume(currentBattleData);
-                      window.pendingSequenceResume = null;
                     }
                   }
                 }
+                return;
               }
-              return;
-            }
 
-            if (battlePhase !== 'CHOOSE') return;
+              if (battlePhase !== 'CHOOSE') return;
 
-            // Online Logic
-            if (gameMode === 'online-pvp') {
-              // I am Host (P1)
-              if (isHost && teamIsP1) {
-                // Select Own Hero
+              // Online Logic
+              if (gameMode === 'online-pvp') {
+                if (isHost && teamIsP1) {
+                  if (h.statuses?.stunned > 0) {
+                    const reason = h.suppressedBy ? "被壓制中" : "異常狀態中";
+                    setBattleLog(prev => [...prev, `❌ ${h.name} ${reason}，本回合無法作為行動角色！`]);
+                    return;
+                  }
+                  setP1Choice(prev => {
+                    const next = { ...prev, heroId: h.id };
+                    if (conn) {
+                      conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
+                      if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                    }
+                    return next;
+                  });
+                }
+                else if (isHost && !teamIsP1) {
+                  if (!p1Choice.heroId) return;
+                  const attacker = battleData.p1.find(x => x.id === p1Choice.heroId);
+                  const canBypass = attacker?.passive?.name === '幻刃';
+                  const isSuppressed = h.suppressedBy;
+                  const frontAlive = team.some(th => th.pos === 'front' && th.currentHp > 0 && !(th.statuses?.untargetable > 0));
+
+                  if (h.statuses?.untargetable > 0) {
+                    setBattleLog(prev => [...prev, `🚫 ${h.name} 目前處於「不可選中」狀態，無法被鎖定！`]);
+                    return;
+                  }
+                  if (frontAlive && h.pos === 'back' && !canBypass && !isSuppressed) {
+                    setBattleLog(prev => [...prev, "⚠️ 後排被前排英雄護衛中，無法被當成直接攻擊的目標！"]);
+                    return;
+                  } else if (isSuppressed && h.pos === 'back' && !canBypass) {
+                    setBattleLog(prev => [...prev, `🎯 ${h.name} 正被壓制中，護衛失效！隊友可直接發動攻擊！`]);
+                  }
+                  setP1Choice(prev => {
+                    const next = { ...prev, targetId: h.id };
+                    if (conn) {
+                      conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
+                      if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                    }
+                    return next;
+                  });
+                }
+                else if (!isHost && !teamIsP1) {
+                  if (h.statuses?.stunned > 0) {
+                    const reason = h.suppressedBy ? "被壓制中" : "異常狀態中";
+                    setBattleLog(prev => [...prev, `❌ ${h.name} ${reason}，本回合無法作為行動角色！`]);
+                    return;
+                  }
+                  setP2Choice(prev => {
+                    const next = { ...prev, heroId: h.id };
+                    if (conn) {
+                      conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
+                      if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                    }
+                    return next;
+                  });
+                }
+                else if (!isHost && teamIsP1) {
+                  if (!p2Choice.heroId) return;
+                  const attacker = battleData.p2.find(x => x.id === p2Choice.heroId);
+                  const canBypass = attacker?.passive?.name === '幻刃';
+                  const isSuppressed = h.suppressedBy;
+                  const frontAlive = team.some(th => th.pos === 'front' && th.currentHp > 0 && !(th.statuses?.untargetable > 0));
+
+                  if (h.statuses?.untargetable > 0) {
+                    setBattleLog(prev => [...prev, `🚫 ${h.name} 目前處於「不可選中」狀態，無法被鎖定！`]);
+                    return;
+                  }
+                  if (frontAlive && h.pos === 'back' && !canBypass && !isSuppressed) {
+                    setBattleLog(prev => [...prev, "⚠️ 後排被前排英雄護衛中，無法被當成直接攻擊的目標！"]);
+                    return;
+                  } else if (isSuppressed && h.pos === 'back' && !canBypass) {
+                    setBattleLog(prev => [...prev, `🎯 ${h.name} 正被壓制中，護衛失效！隊友可直接發動攻擊！`]);
+                  }
+                  setP2Choice(prev => {
+                    const next = { ...prev, targetId: h.id };
+                    if (conn) {
+                      conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
+                      if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                    }
+                    return next;
+                  });
+                }
+                return;
+              }
+
+              // Local Logic
+              if (teamIsP1) {
                 if (h.statuses?.stunned > 0) {
                   const reason = h.suppressedBy ? "被壓制中" : "異常狀態中";
                   setBattleLog(prev => [...prev, `❌ ${h.name} ${reason}，本回合無法作為行動角色！`]);
                   return;
                 }
-                setP1Choice(prev => {
-                  const next = { ...prev, heroId: h.id };
-                  if (conn) {
-                    conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
-                    if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
-                  }
-                  return next;
-                });
-              }
-              // I am Host (P1) picking Enemy (P2)
-              else if (isHost && !teamIsP1) {
-                // Must have hero selected first
-                if (!p1Choice.heroId) return;
-
-                // Target Protection Logic for Online Host
+                setP1Choice(prev => ({ ...prev, heroId: h.id }));
+              } else {
                 const attacker = battleData.p1.find(x => x.id === p1Choice.heroId);
                 const canBypass = attacker?.passive?.name === '幻刃';
                 const isSuppressed = h.suppressedBy;
@@ -1440,109 +1549,18 @@ function App() {
                   setBattleLog(prev => [...prev, `🚫 ${h.name} 目前處於「不可選中」狀態，無法被鎖定！`]);
                   return;
                 }
-
                 if (frontAlive && h.pos === 'back' && !canBypass && !isSuppressed) {
                   setBattleLog(prev => [...prev, "⚠️ 後排被前排英雄護衛中，無法被當成直接攻擊的目標！"]);
                   return;
                 } else if (isSuppressed && h.pos === 'back' && !canBypass) {
                   setBattleLog(prev => [...prev, `🎯 ${h.name} 正被壓制中，護衛失效！隊友可直接發動攻擊！`]);
                 }
-
-                setP1Choice(prev => {
-                  const next = { ...prev, targetId: h.id };
-                  if (conn) {
-                    conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
-                    if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
-                  }
-                  return next;
-                });
+                setP1Choice(prev => ({ ...prev, targetId: h.id }));
               }
-              // I am Guest (P2)
-              else if (!isHost && !teamIsP1) {
-                // Select Own Hero (Guest is P2)
-                if (h.statuses?.stunned > 0) {
-                  const reason = h.suppressedBy ? "被壓制中" : "異常狀態中";
-                  setBattleLog(prev => [...prev, `❌ ${h.name} ${reason}，本回合無法作為行動角色！`]);
-                  return;
-                }
-                setP2Choice(prev => {
-                  const next = { ...prev, heroId: h.id };
-                  if (conn) {
-                    conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
-                    if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
-                  }
-                  return next;
-                });
-              }
-              // I am Guest (P2) picking Enemy (P1)
-              else if (!isHost && teamIsP1) {
-                // Must have hero selected first
-                if (!p2Choice.heroId) return;
-
-                // Target Protection Logic for Online Guest
-                const attacker = battleData.p2.find(x => x.id === p2Choice.heroId);
-                const canBypass = attacker?.passive?.name === '幻刃';
-                const isSuppressed = h.suppressedBy;
-                const frontAlive = team.some(th => th.pos === 'front' && th.currentHp > 0 && !(th.statuses?.untargetable > 0));
-
-                if (h.statuses?.untargetable > 0) {
-                  setBattleLog(prev => [...prev, `🚫 ${h.name} 目前處於「不可選中」狀態，無法被鎖定！`]);
-                  return;
-                }
-
-                if (frontAlive && h.pos === 'back' && !canBypass && !isSuppressed) {
-                  setBattleLog(prev => [...prev, "⚠️ 後排被前排英雄護衛中，無法被當成直接攻擊的目標！"]);
-                  return;
-                } else if (isSuppressed && h.pos === 'back' && !canBypass) {
-                  setBattleLog(prev => [...prev, `🎯 ${h.name} 正被壓制中，護衛失效！隊友可直接發動攻擊！`]);
-                }
-
-                setP2Choice(prev => {
-                  const next = { ...prev, targetId: h.id };
-                  if (conn) {
-                    conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
-                    if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
-                  }
-                  return next;
-                });
-              }
-              return;
-            }
-
-            // Local Logic (Legacy/AI)
-            if (teamIsP1) {
-              if (h.statuses?.stunned > 0) {
-                const reason = h.suppressedBy ? "被壓制中" : "異常狀態中";
-                setBattleLog(prev => [...prev, `❌ ${h.name} ${reason}，本回合無法作為行動角色！`]);
-                return;
-              }
-              setP1Choice(prev => ({ ...prev, heroId: h.id }));
-            } else {
-              // Target Protection Logic
-              const attacker = battleData.p1.find(x => x.id === p1Choice.heroId);
-              const canBypass = attacker?.passive?.name === '幻刃';
-              const isSuppressed = h.suppressedBy;
-              const frontAlive = team.some(th => th.pos === 'front' && th.currentHp > 0 && !(th.statuses?.untargetable > 0));
-              const isUntargetable = h.statuses?.untargetable > 0;
-
-              if (isUntargetable) {
-                setBattleLog(prev => [...prev, `🚫 ${h.name} 目前處於「不可選中」狀態，無法被鎖定！`]);
-                return;
-              }
-
-              if (frontAlive && h.pos === 'back' && !canBypass && !isSuppressed) {
-                setBattleLog(prev => [...prev, "⚠️ 後排被前排英雄護衛中，無法被當成直接攻擊的目標！"]);
-                return;
-              } else if (canBypass && frontAlive && h.pos === 'back') {
-                setBattleLog(prev => [...prev, `💨 ${attacker.name} 發動 [${attacker.passive.name}]，切入敵方後排！`]);
-              } else if (isSuppressed && h.pos === 'back' && !canBypass) {
-                setBattleLog(prev => [...prev, `🎯 ${h.name} 正被壓制中，護衛失效！隊友可直接發動攻擊！`]);
-              }
-              setP1Choice(prev => ({ ...prev, targetId: h.id }));
-            }
-          }}
-        />
-      ));
+            }}
+          />
+        );
+      });
     };
 
     return (
