@@ -166,20 +166,22 @@ function App() {
           return;
         }
 
-        const { error } = await supabase.from('users').insert([{
+        const { data, error } = await supabase.from('users').insert([{
           account: loginData.account,
           password: loginData.password,
           holyPearl: 0,
           magicCore: 0,
           leaf: 0,
           goldCoin: 0
-        }]);
+        }]).select();
 
-        if (!error) {
+        if (error) {
+          console.error("Supabase註冊報錯:", error);
+          alert(`註冊失敗：${error.message}`);
+        } else {
           alert("註冊成功！請直接登入");
           setIsRegisterMode(false);
-        } else {
-          alert("註冊失敗，請檢查 Supabase 設定");
+          setLoginData({ account: loginData.account, password: '' });
         }
       } else {
         // Supabase 登入邏輯
