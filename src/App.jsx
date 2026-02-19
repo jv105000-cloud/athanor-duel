@@ -1300,38 +1300,42 @@ function App() {
           statuses={h.statuses}
           shield={h.shield}
           onClick={() => {
-            if (battlePhase === 'ULT_TARGETING' && !isP1) {
-              // Manual Selection logic
-              if (pendingUltSelection) {
-                const { pId, actorId, action, currentBattleData: draftBD } = pendingUltSelection;
-                const isMyTurnToPick = (gameMode === 'online-pvp' && ((isHost && pId === 1) || (!isHost && pId === 2))) || (gameMode !== 'online-pvp' && pId === 1);
-                if (!isMyTurnToPick && gameMode === 'online-pvp') return;
-                // Use the draft from the sequence, NOT the stale battleData state
-                const currentBattleData = JSON.parse(JSON.stringify(draftBD || battleData));
-                const team = pId === 1 ? currentBattleData.p1 : currentBattleData.p2;
-                const actor = team.find(x => x.id === actorId);
-                const enemyTeam = pId === 1 ? currentBattleData.p2 : currentBattleData.p1;
-                const target = enemyTeam.find(x => x.id === h.id);
+            if (battlePhase === 'ULT_TARGETING') {
+              const { pId } = pendingUltSelection;
+              const amIActivating = (gameMode === 'online-pvp') ? (isHost ? pId === 1 : pId === 2) : (pId === 1);
+              const isTargetingEnemy = (gameMode === 'online-pvp') ? (isHost ? !teamIsP1 : teamIsP1) : !teamIsP1;
 
-                if (target && target.currentHp > 0) {
-                  const suppressDur = action.duration || 3;
-                  target.statuses.stunned = suppressDur;
-                  target.suppressedBy = actor.id;
-                  actor.statuses.stunned = suppressDur;
-                  actor.isChannelingSuppression = true;
-                  actor.suppressingTargetId = target.id;
+              if (amIActivating && isTargetingEnemy) {
+                // Manual Selection logic
+                if (pendingUltSelection) {
+                  const { actorId, action, currentBattleData: draftBD } = pendingUltSelection;
+                  // Use the draft from the sequence, NOT the stale battleData state
+                  const currentBattleData = JSON.parse(JSON.stringify(draftBD || battleData));
+                  const team = pId === 1 ? currentBattleData.p1 : currentBattleData.p2;
+                  const actor = team.find(x => x.id === actorId);
+                  const enemyTeam = pId === 1 ? currentBattleData.p2 : currentBattleData.p1;
+                  const target = enemyTeam.find(x => x.id === h.id);
 
-                  setBattleLog(prev => [...prev, `💀 [${action.name}]！${actor.name} 手動選擇壓制了 ${target.name}！`]);
-                  setBattleData(JSON.parse(JSON.stringify(currentBattleData)));
-                  setPendingUltSelection(null);
-                  setBattlePhase('ACTION_ANIM');
+                  if (target && target.currentHp > 0) {
+                    const suppressDur = action.duration || 3;
+                    target.statuses.stunned = suppressDur;
+                    target.suppressedBy = actor.id;
+                    actor.statuses.stunned = suppressDur;
+                    actor.isChannelingSuppression = true;
+                    actor.suppressingTargetId = target.id;
 
-                  if (window.pendingSequenceResume) {
-                    if (gameMode === 'online-pvp' && conn) {
-                      conn.send({ type: 'SYNC_ULT_TARGET', targetId: target.id });
+                    setBattleLog(prev => [...prev, `💀 [${action.name}]！我方手動選擇壓制了 ${target.name}！`]);
+                    setBattleData(JSON.parse(JSON.stringify(currentBattleData)));
+                    setPendingUltSelection(null);
+                    setBattlePhase('ACTION_ANIM');
+
+                    if (window.pendingSequenceResume) {
+                      if (gameMode === 'online-pvp' && conn) {
+                        conn.send({ type: 'SYNC_ULT_TARGET', targetId: target.id });
+                      }
+                      window.pendingSequenceResume(currentBattleData);
+                      window.pendingSequenceResume = null;
                     }
-                    window.pendingSequenceResume(currentBattleData);
-                    window.pendingSequenceResume = null;
                   }
                 }
               }
@@ -1343,7 +1347,7 @@ function App() {
             // Online Logic
             if (gameMode === 'online-pvp') {
               // I am Host (P1)
-              if (isHost && isP1) {
+              if (isHost && teamIsP1) {
                 // Select Own Hero
                 if (h.statuses?.stunned > 0) {
                   const reason = h.suppressedBy ? "被壓制中" : "異常狀態中";
@@ -1352,13 +1356,15 @@ function App() {
                 }
                 setP1Choice(prev => {
                   const next = { ...prev, heroId: h.id };
-                  conn.send({ type: 'SYNC_CHOICE', heroId: h.id });
-                  if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  if (conn) {
+                    conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
+                    if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  }
                   return next;
                 });
               }
               // I am Host (P1) picking Enemy (P2)
-              else if (isHost && !isP1) {
+              else if (isHost && !teamIsP1) {
                 // Must have hero selected first
                 if (!p1Choice.heroId) return;
 
@@ -1382,13 +1388,15 @@ function App() {
 
                 setP1Choice(prev => {
                   const next = { ...prev, targetId: h.id };
-                  conn.send({ type: 'SYNC_CHOICE', heroId: p1Choice.heroId, targetId: h.id });
-                  if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  if (conn) {
+                    conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
+                    if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  }
                   return next;
                 });
               }
               // I am Guest (P2)
-              else if (!isHost && !isP1) {
+              else if (!isHost && !teamIsP1) {
                 // Select Own Hero (Guest is P2)
                 if (h.statuses?.stunned > 0) {
                   const reason = h.suppressedBy ? "被壓制中" : "異常狀態中";
@@ -1397,13 +1405,15 @@ function App() {
                 }
                 setP2Choice(prev => {
                   const next = { ...prev, heroId: h.id };
-                  conn.send({ type: 'SYNC_CHOICE', heroId: h.id });
-                  if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  if (conn) {
+                    conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
+                    if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  }
                   return next;
                 });
               }
               // I am Guest (P2) picking Enemy (P1)
-              else if (!isHost && isP1) {
+              else if (!isHost && teamIsP1) {
                 // Must have hero selected first
                 if (!p2Choice.heroId) return;
 
@@ -1427,8 +1437,10 @@ function App() {
 
                 setP2Choice(prev => {
                   const next = { ...prev, targetId: h.id };
-                  conn.send({ type: 'SYNC_CHOICE', heroId: p2Choice.heroId, targetId: h.id });
-                  if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  if (conn) {
+                    conn.send({ type: 'SYNC_CHOICE', heroId: next.heroId, targetId: next.targetId });
+                    if (next.heroId && next.targetId) conn.send({ type: 'SYNC_READY', ready: true });
+                  }
                   return next;
                 });
               }
@@ -1436,7 +1448,7 @@ function App() {
             }
 
             // Local Logic (Legacy/AI)
-            if (isP1) {
+            if (teamIsP1) {
               if (h.statuses?.stunned > 0) {
                 const reason = h.suppressedBy ? "被壓制中" : "異常狀態中";
                 setBattleLog(prev => [...prev, `❌ ${h.name} ${reason}，本回合無法作為行動角色！`]);
