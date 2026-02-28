@@ -248,7 +248,7 @@ export const factions = [
                     5: { type: 'evade', name: '隱遁' },
                     6: { type: 'block', name: '格檔' }
                 },
-                image: '/assets/theiolee.png'
+                image: '/assets/theiolee.jpg'
             },
             {
                 id: 'he',
