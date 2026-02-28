@@ -2167,7 +2167,7 @@ function App() {
   return (
     <div className="app-container">
       <header className="hero-header">
-        <h1>艾森諾對決 (V1.5)</h1>
+        <h1>艾森諾對決</h1>
         <div className="subtitle">ATHANOR DUEL</div>
       </header>
       <main className="main-content">
