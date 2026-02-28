@@ -126,7 +126,7 @@ export const factions = [
                     3: { type: 'attack', value: 3, name: '法則主宰' },
                     4: { type: 'ultimate', name: '零度奇點', value: 0, effect: 'SUPPRESS_TARGET', duration: 3, description: '絕對壓制目標英雄3回合，無視前後排護衛且可手動選位，期間阿萊斯特同樣無法行動。若目標陣亡則壓制提前結束。受壓制者無法被護衛，全體隊友可集火。' },
                     5: { type: 'evade', name: '空間閃擊' },
-                    6: { type: 'block', name: '矩陣護盾' }
+                    6: { type: 'block', name: '幾何結界' }
                 },
                 image: '/assets/aleister.png',
                 imageSettings: { objectPosition: 'center 20%' }
@@ -235,6 +235,22 @@ export const factions = [
         description: '遊走於法外之地的孤傲劍客與武士。',
         heroes: [
             {
+                id: 'theiolee',
+                name: '妙手神偷 希歐雷',
+                hp: 6,
+                speed: 6,
+                voice: '波導會指引我奪取那件寶物，而你甚至看不見我的影子。',
+                diceActions: {
+                    1: { type: 'attack', value: 0, name: '繳械', effect: 'SILENCE_TARGET', description: '使目標對方英雄沉默 1 回合' },
+                    2: { type: 'attack', value: 0, name: '幽魅妙手', effect: 'SILENCE_TRANSFER', description: '使目標對方英雄沉默 1 回合，且本回合受到的傷害將轉移給該目標' },
+                    3: { type: 'attack', value: 0, name: '君子上梁', effect: 'SILENCE_UNTARGETABLE', description: '使目標對方英雄沉默 1 回合，且自身進入「不可選中」狀態 1 回合' },
+                    4: { type: 'ultimate', name: '神偷天下', effect: 'COPY_ULTIMATE', description: '複製目標對方的大招（骰子點數 4）並立即使用' },
+                    5: { type: 'evade', name: '隱遁' },
+                    6: { type: 'block', name: '格檔' }
+                },
+                image: '/assets/theiolee.png'
+            },
+            {
                 id: 'he',
                 name: '孤俠 赫',
                 hp: 8,
@@ -291,7 +307,7 @@ export const factions = [
                     6: { type: 'block', name: '格檔' }
                 },
                 image: '/assets/raz.png'
-            },
+            }
         ]
     }
 ];

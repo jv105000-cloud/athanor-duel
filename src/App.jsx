@@ -188,7 +188,20 @@ function App() {
     try {
       if (isRegisterMode) {
         // Supabase 註冊邏輯
-        const { data: existing } = await supabase.from('users').select('account').eq('account', loginData.account).single();
+        const { data: existing, error: checkError } = await supabase.from('users').select('account').eq('account', loginData.account).maybeSingle();
+
+        if (checkError) {
+          if (checkError.message.includes("relation \"public.users\" does not exist")) {
+            alert("❌ 雲端資料庫尚未初始化！\n請先前往 Supabase SQL Editor 執行建表語法。");
+            return;
+          }
+          if (checkError.code === '42501' || checkError.message.toLowerCase().includes('permission denied')) {
+            alert("❌ 權限遭拒 (RLS Error)！\n請確保 Supabase 的 users 資料表已開啟 Row Level Security (RLS) 並新增「允許所有用戶寫入與讀取」的 Policy。\n\nPolicy 設定建議：\n1. Enable Insert for anon\n2. Enable Select for anon");
+            return;
+          }
+          throw checkError;
+        }
+
         if (existing) {
           alert("帳號已存在");
           return;
@@ -207,9 +220,9 @@ function App() {
           console.error("Supabase註冊報錯:", error);
           alert(`註冊失敗：${error.message}`);
         } else {
-          alert("註冊成功！請直接登入");
+          alert("✨ 註冊成功！請直接登入");
           setIsRegisterMode(false);
-          setLoginData({ account: loginData.account, password: '' });
+          setLoginData(prev => ({ ...prev, password: '' }));
         }
       } else {
         // Supabase 登入邏輯
@@ -217,20 +230,43 @@ function App() {
           .select('*')
           .eq('account', loginData.account)
           .eq('password', loginData.password)
-          .single();
+          .maybeSingle();
 
-        if (data && !error) {
+        if (error) {
+          if (error.code === '42501' || error.message.toLowerCase().includes('permission denied')) {
+            alert("❌ 雲端資料庫權限不足！\n請在 Supabase 為 users 資料表新增「Select」權限的 Policy。");
+            return;
+          }
+          throw error;
+        }
+
+        if (data) {
           setCurrentUser(data);
           localStorage.setItem('ayiseno_user', JSON.stringify(data));
           setView('lobby');
         } else {
-          alert("帳號或密碼錯誤");
+          alert("帳號或密碼錯誤 (或是帳號尚未註冊)");
         }
       }
     } catch (err) {
-      alert("連線雲端資料庫失敗，請檢查 supabaseClient.js 設定");
-      console.error(err);
+      console.error("Database connection failure:", err);
+      alert(`連線雲端資料庫失敗！\n錯誤原因：${err.message || '未知錯誤'}\n請確保您的 supabaseClient.js 設定正確，且網路連線正常。`);
     }
+  };
+
+  const handleGuestLogin = () => {
+    const guestUser = {
+      account: `訪客_${Math.floor(1000 + Math.random() * 9000)}`,
+      password: 'GUEST',
+      holyPearl: 100,
+      magicCore: 10,
+      leaf: 5,
+      goldCoin: 1000
+    };
+    setCurrentUser(guestUser);
+    localStorage.setItem('ayiseno_user', JSON.stringify(guestUser));
+    setView('lobby');
+    setBattleLog(prev => [...prev, "⚔️ 以訪客身分進入艾森諾，部分資料將僅存存在本地裝置。"]);
   };
 
   const handleLogout = () => {
@@ -839,6 +875,19 @@ function App() {
 
     const applyDamage = (victim, amount, vfxColor, isTrue = false, isReflected = false, attacker = null) => {
       if (!victim || victim.currentHp <= 0) return 0;
+
+      // Damage Transfer (Theiolee's 幽魅妙手)
+      if (!isReflected && victim.hasDamageTransferTo) {
+        const transferId = victim.hasDamageTransferTo;
+        const targetTeam = currentBattleData.p1.find(h => h.id === transferId) ? currentBattleData.p1 : currentBattleData.p2;
+        const realTarget = targetTeam.find(h => h.id === transferId);
+        if (realTarget && realTarget.currentHp > 0 && realTarget.id !== victim.id) {
+          setBattleLog(prev => [...prev, `🌀 ${victim.name} 將傷害轉移給了 ${realTarget.name}！`]);
+          // Use isReflected=true to prevent infinite loops
+          return applyDamage(realTarget, amount, vfxColor, isTrue, true, attacker);
+        }
+      }
+
       if (victim.statuses?.untargetable > 0) return 0;
       if (victim.statuses?.invincible > 0 && !isTrue) return 0;
 
@@ -991,7 +1040,7 @@ function App() {
         let logHeader = `${pLabel} ${actor.name} ➡️ ${targetName}：`;
 
         return new Promise(resolve => {
-          setTimeout(() => {
+          setTimeout(async () => {
             try {
               if (actor.statuses?.untargetable > 0) {
                 setBattleLog(prev => [...prev, `✨ ${pLabel} ${actor.name} 處於不可選中狀態，影舞中...`]);
@@ -1102,10 +1151,41 @@ function App() {
                     setBattleLog(prev => [...prev, `${logHeader}命中 ${target.name} 但被其絕對防禦無視！`]);
                   }
                 }
+
+                // Theiolee: Special Effects for Attacks (Roll 1, 2, 3)
+                if (action.effect === 'SILENCE_TARGET' && target) {
+                  target.statuses.silenced = 1;
+                  setBattleLog(prev => [...prev, `🤐 ${actor.name} 封印了 ${target.name} 的招式！(沉默 1 回合)`]);
+                  triggerVfx(target.id, 'stun');
+                } else if (action.effect === 'SILENCE_TRANSFER' && target) {
+                  target.statuses.silenced = 1;
+                  actor.hasDamageTransferTo = target.id;
+                  setBattleLog(prev => [...prev, `👻 ${actor.name} 隱入陰影並連結了 ${target.name}！將轉移本回合受到的傷害。`]);
+                  triggerVfx(actor.id, 'dark');
+                } else if (action.effect === 'SILENCE_UNTARGETABLE' && target) {
+                  target.statuses.silenced = 1;
+                  actor.statuses.untargetable = 1;
+                  setBattleLog(prev => [...prev, `🎭 ${actor.name} 戲弄了 ${target.name} 並消失在原地！(不可選中 1 回合)`]);
+                  triggerVfx(actor.id, 'dark');
+                }
               } else if (action.type === 'ultimate') {
                 const skillName = action.name || "大招";
 
-                if (action.effect === 'UNTARGETABLE_2_TURNS') {
+                // Theiolee: Implementation of COPY_ULTIMATE
+                if (action.effect === 'COPY_ULTIMATE' && target) {
+                  const targetUlt = target.diceActions[4];
+                  if (targetUlt && targetUlt.type === 'ultimate') {
+                    setBattleLog(prev => [...prev, `🎭 ${actor.name} 施展 [${skillName}]！複製並使用了 ${target.name} 的大招 [${targetUlt.name}]！`]);
+                    // Recursively execute the target's ultimate effect using a dummy playStep concept
+                    // Since specific ultimates are complex, we'll manually proxy the most common ones or re-run logic
+                    // For simplicity, we create a temporary action object and re-process it
+                    await handleCopiedUltimate(actor, target, targetUlt, playerNum, logHeader);
+                    hitAny = true;
+                  } else {
+                    setBattleLog(prev => [...prev, `❌ ${actor.name} 試圖複製招式，但對手似乎沒有準備大招！`]);
+                  }
+                }
+                else if (action.effect === 'UNTARGETABLE_2_TURNS') {
                   setBattleLog(prev => [...prev, `${logHeader}施展 [${skillName}]！沒入影縫。`]);
                   hitAny = true;
                 } else if (action.effect === 'INVINCIBLE_STUN') {
@@ -1228,7 +1308,39 @@ function App() {
           if (h.statuses.speed > 0) h.statuses.speed--;
           if (h.statuses.superArmor > 0) h.statuses.superArmor--;
           if (h.statuses.stunned > 0) h.statuses.stunned--;
+          h.hasDamageTransferTo = null; // Clear Theiolee's transfer
         });
+      }
+
+      async function handleCopiedUltimate(actor, target, action, playerNum, logHeader) {
+        const team = playerNum === 1 ? currentBattleData.p1 : currentBattleData.p2;
+        const enemyTeam = playerNum === 1 ? currentBattleData.p2 : currentBattleData.p1;
+
+        // This is a simplified proxy of ultimate logic
+        if (action.target === 'all') {
+          enemyTeam.forEach(e => {
+            const d = applyDamage(e, action.value || 0, getVfxColor(actor.factionId), action.effect === 'TRUE_DAMAGE_ALL', false, actor);
+            if (d > 0) triggerVfx(e.id, 'damage', d);
+          });
+          setBattleLog(prev => [...prev, `💥 複製的大招對敵方全體造成了毀滅性打擊！`]);
+        } else if (target && action.value > 0) {
+          const d = applyDamage(target, action.value, getVfxColor(actor.factionId), false, false, actor);
+          if (d > 0) setBattleLog(prev => [...prev, `💥 複製的大招對 ${target.name} 造成 ${d} 點傷害！`]);
+        }
+
+        // Special Effects Mirror
+        if (action.effect === 'SILENCE_ALL') {
+          enemyTeam.forEach(e => { if (e.currentHp > 0) e.statuses.silenced = action.duration || 1; });
+        } else if (action.effect === 'HEAL_FULL') {
+          actor.currentHp = actor.hp;
+        } else if (action.effect === 'BUFF_REGEN_3_5_TURNS') {
+          actor.statuses.regen = 5;
+        } else if (action.effect === 'UNTARGETABLE_2_TURNS') {
+          actor.statuses.untargetable = 2;
+          actor.pendingUltDmg = action.value || 5;
+        } else if (action.effect === 'INVINCIBLE_STUN') {
+          actor.statuses.invincible = action.duration || 5;
+        }
       }
 
       async function finalizeSequence() {
@@ -2055,7 +2167,7 @@ function App() {
   return (
     <div className="app-container">
       <header className="hero-header">
-        <h1>艾森諾對決</h1>
+        <h1>艾森諾對決 (V1.5)</h1>
         <div className="subtitle">ATHANOR DUEL</div>
       </header>
       <main className="main-content">
@@ -2075,6 +2187,7 @@ function App() {
                     type="text"
                     value={loginData.account}
                     onChange={e => setLoginData({ ...loginData, account: e.target.value })}
+                    onKeyDown={e => e.key === 'Enter' && handleLoginAction()}
                     placeholder="輸入帳號..."
                   />
                 </div>
@@ -2084,6 +2197,7 @@ function App() {
                     type="password"
                     value={loginData.password}
                     onChange={e => setLoginData({ ...loginData, password: e.target.value })}
+                    onKeyDown={e => e.key === 'Enter' && handleLoginAction()}
                     placeholder="輸入密碼..."
                   />
                 </div>
@@ -2091,6 +2205,12 @@ function App() {
                 <button className="login-btn highlight-btn" onClick={handleLoginAction}>
                   {isRegisterMode ? '註冊帳號' : '進入艾森諾'}
                 </button>
+
+                {!isRegisterMode && (
+                  <button className="guest-btn" onClick={handleGuestLogin}>
+                    👤 快速試玩 (訪客登入)
+                  </button>
+                )}
 
                 <div className="login-toggle" onClick={() => setIsRegisterMode(!isRegisterMode)}>
                   {isRegisterMode ? '已有帳號？ 立即登入' : '初來乍到？ 註冊新英雄'}

@@ -1,0 +1,92 @@
+﻿
+> athanor-duel@0.0.0 build
+> vite build
+
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m??[39m 3 modules transformed.
+node.exe : [31m??[39m Buil
+d failed in 147ms
+位於 線路:1 字元:1
++ & "C:\Program Files\nodej
+s/node.exe" "C:\Program Fil
+es\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: ([3  
+  1m??[39m Build failed    
+ in 147ms:String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+[31merror during build:
+[31m[vite:esbuild] Transfo
+rm failed with 1 error:
+C:/Users/user/Desktop/?暹ㄝ隢曉
+?瘙?src/App.jsx:1182:20: ERR
+OR: "await" can only be use
+d inside an "async" functio
+n[31m
+file: [36mC:/Users/user/De
+sktop/?暹ㄝ隢曉?瘙?src/App.jsx:1
+182:20[31m
+[33m
+[33m"await" can only be us
+ed inside an "async" functi
+on[33m
+1180 |                     
+ // Since specific ultimate
+s are complex, we'll manual
+ly proxy the most common on
+es or re-run logic
+1181 |                     
+ // For simplicity, we crea
+te a temporary action objec
+t and re-process it
+1182 |                     
+ await handleCopiedUltimate
+(actor, target, targetUlt, 
+playerNum, logHeader);
+     |                     
+ ^
+1183 |                     
+ hitAny = true;
+1184 |                    }
+ else {
+[31m
+    at failureErrorWithLog 
+(C:\Users\user\Desktop\?暹ㄝ隢
+曉?瘙暝node_modules\esbuild\li
+b\main.js:1467:15)
+    at C:\Users\user\Deskto
+p\?暹ㄝ隢曉?瘙暝node_modules\esbu
+ild\lib\main.js:736:50
+    at responseCallbacks.<c
+omputed> (C:\Users\user\Des
+ktop\?暹ㄝ隢曉?瘙暝node_modules\e
+sbuild\lib\main.js:603:9)
+    at handleIncomingPacket
+ (C:\Users\user\Desktop\?暹ㄝ
+隢曉?瘙暝node_modules\esbuild\l
+ib\main.js:658:12)
+    at Socket.readFromStdou
+t (C:\Users\user\Desktop\?暹
+ㄝ隢曉?瘙暝node_modules\esbuild\
+lib\main.js:581:7)
+    at Socket.emit (node:ev
+ents:508:28)
+    at addChunk (node:inter
+nal/streams/readable:559:12
+)
+    at readableAddChunkPush
+ByteMode (node:internal/str
+eams/readable:510:3)
+    at Readable.push (node:
+internal/streams/readable:3
+90:5)
+    at Pipe.onStreamRead (n
+ode:internal/stream_base_co
+mmons:189:23)[39m
