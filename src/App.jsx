@@ -876,6 +876,19 @@ function App() {
     const applyDamage = (victim, amount, vfxColor, isTrue = false, isReflected = false, attacker = null) => {
       if (!victim || victim.currentHp <= 0) return 0;
 
+      let effectiveAmount = amount;
+      // Aleister Suppression Bonus: +2 damage if target is suppressed by someone on attacker's team
+      if (victim.suppressedBy && attacker && !isReflected) {
+        const suppressorId = victim.suppressedBy;
+        const p1Team = currentBattleData.p1;
+        const p2Team = currentBattleData.p2;
+        const isAttackerP1 = p1Team.some(h => h.id === attacker.id);
+        const isSuppressorP1 = p1Team.some(h => h.id === suppressorId);
+        if (isAttackerP1 === isSuppressorP1) {
+          effectiveAmount += 2;
+        }
+      }
+
       // Damage Transfer (Theiolee's 幽魅妙手)
       if (!isReflected && victim.hasDamageTransferTo) {
         const transferId = victim.hasDamageTransferTo;
@@ -884,14 +897,14 @@ function App() {
         if (realTarget && realTarget.currentHp > 0 && realTarget.id !== victim.id) {
           setBattleLog(prev => [...prev, `🌀 ${victim.name} 將傷害轉移給了 ${realTarget.name}！`]);
           // Use isReflected=true to prevent infinite loops
-          return applyDamage(realTarget, amount, vfxColor, isTrue, true, attacker);
+          return applyDamage(realTarget, effectiveAmount, vfxColor, isTrue, true, attacker);
         }
       }
 
       if (victim.statuses?.untargetable > 0) return 0;
       if (victim.statuses?.invincible > 0 && !isTrue) return 0;
 
-      let remaining = amount;
+      let remaining = effectiveAmount;
       let totalDealt = 0;
 
       if (victim.shield > 0 && !isTrue) {
@@ -1982,8 +1995,9 @@ function App() {
     const changes = [
       {
         version: "第二章：英雄集結 (Hero Assembly)",
-        date: "2026-02-28 最終更新",
+        date: "2026-03-01 最終更新",
         items: [
+          "[英雄強化] 🔮 阿萊斯特「零度奇點」戰術升級：現在受壓制的目標將額外承受我方英雄 +2 點傷害，大幅強化團隊集火效率。",
           "[新英雄降臨] 🎭 「妙手神偷 希歐雷」加入浪人武士！獨特機制 [沉默]、[傷害轉移] 與複製大招的 [神偷天下] 震撼戰場。",
           "[英雄平衡] ⚖️ 希歐雷戰力優化：基礎技能 (1)(2)(3) 點數傷害從 0 提升至 1，增加正面對拼能力。",
           "[系統優化] 🛡️ 戰鬥邏輯同步：修正了希歐雷在使用 [幽魅妙手] 時可能的狀態殘留問題。",

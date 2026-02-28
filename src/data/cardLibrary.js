@@ -124,7 +124,7 @@
                     1: { type: 'attack', value: 1, name: '絕對矩陣' },
                     2: { type: 'attack', value: 2, name: '零．弧' },
                     3: { type: 'attack', value: 3, name: '法則主宰' },
-                    4: { type: 'ultimate', name: '零度奇點', value: 0, effect: 'SUPPRESS_TARGET', duration: 3, description: '絕對壓制目標英雄3回合，無視前後排護衛且可手動選位，期間阿萊斯特同樣無法行動。若目標陣亡則壓制提前結束。受壓制者無法被護衛，全體隊友可集火。' },
+                    4: { type: 'ultimate', name: '零度奇點', value: 0, effect: 'SUPPRESS_TARGET', duration: 3, description: '絕對壓制目標英雄3回合，期間阿萊斯特同樣無法行動。受壓制者無法被護衛，且我方英雄對其造成的傷害額外 +2。' },
                     5: { type: 'evade', name: '空間閃擊' },
                     6: { type: 'block', name: '矩陣護盾' }
                 },
