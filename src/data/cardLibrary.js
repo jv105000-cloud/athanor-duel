@@ -241,9 +241,9 @@
                 speed: 6,
                 voice: '波導會指引我奪取那件寶物，而你甚至看不見我的影子。',
                 diceActions: {
-                    1: { type: 'attack', value: 0, name: '繳械', effect: 'SILENCE_TARGET', description: '使目標對方英雄沉默 1 回合' },
-                    2: { type: 'attack', value: 0, name: '幽魅妙手', effect: 'SILENCE_TRANSFER', description: '使目標對方英雄沉默 1 回合，且本回合受到的傷害將轉移給該目標' },
-                    3: { type: 'attack', value: 0, name: '君子上梁', effect: 'SILENCE_UNTARGETABLE', description: '使目標對方英雄沉默 1 回合，且自身進入「不可選中」狀態 1 回合' },
+                    1: { type: 'attack', value: 1, name: '繳械', effect: 'SILENCE_TARGET', description: '使目標對方英雄沉默 1 回合' },
+                    2: { type: 'attack', value: 1, name: '幽魅妙手', effect: 'SILENCE_TRANSFER', description: '使目標對方英雄沉默 1 回合，且本回合受到的傷害將轉移給該目標' },
+                    3: { type: 'attack', value: 1, name: '君子上梁', effect: 'SILENCE_UNTARGETABLE', description: '使目標對方英雄沉默 1 回合，且自身進入「不可選中」狀態 1 回合' },
                     4: { type: 'ultimate', name: '神偷天下', effect: 'COPY_ULTIMATE', description: '複製目標對方的大招（骰子點數 4）並立即使用' },
                     5: { type: 'evade', name: '隱遁' },
                     6: { type: 'block', name: '格檔' }
