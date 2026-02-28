@@ -93,6 +93,9 @@ const HeroCard = ({ hero, factionId, isInBattle, onClick, isSelected, isTargeted
                         {activeVfx.type === 'dark' && <div className="dark-vfx"></div>}
                         {activeVfx.type === 'forest' && <div className="forest-vfx"></div>}
                         {activeVfx.type === 'shield' && <div className="shield-vfx"></div>}
+                        {activeVfx.type === 'xioule-wave' && <div className="xioule-vfx"></div>}
+                        {activeVfx.type === 'he-icefire' && <div className="he-vfx"></div>}
+                        {activeVfx.type === 'ryoma-aura' && <div className="ryoma-vfx"></div>}
                     </div>
                 )}
 
