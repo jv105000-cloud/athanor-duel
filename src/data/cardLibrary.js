@@ -249,7 +249,7 @@ export const factions = [
                     6: { type: 'block', name: '格檔' }
                 },
                 image: '/assets/theiolee.jpg',
-                imageSettings: { objectPosition: 'center 20%' }
+                imageSettings: { objectPosition: 'center 10%' }
             },
             {
                 id: 'he',
