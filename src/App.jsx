@@ -946,6 +946,19 @@ function App() {
       }
 
       triggerVfx(victim.id, vfxColor);
+
+      // Luo Jun: Longmai Protection (Resurrection)
+      if (victim.currentHp <= 0) {
+        const team = currentBattleData.p1.some(h => h.id === victim.id) ? currentBattleData.p1 : currentBattleData.p2;
+        const luojun = team.find(h => h.id === 'luojun');
+        if (luojun && !luojun.luojunPassiveUsed) {
+          luojun.luojunPassiveUsed = true;
+          victim.currentHp = victim.hp; // Full resurrection
+          setBattleLog(prev => [...prev, `🏮 洛君觸發 [龍脈護靈]：龍脈無可斬斷！${victim.name} 滿血復活！`]);
+          triggerVfx(victim.id, 'light');
+        }
+      }
+
       return totalDealt;
     };
 
@@ -1166,19 +1179,28 @@ function App() {
                 }
 
                 // Theiolee: Special Effects for Attacks (Roll 1, 2, 3)
-                if (action.effect === 'SILENCE_TARGET' && target) {
+                if (action.effect === 'SOURCE_ECHO' && target) {
                   target.statuses.silenced = 1;
-                  setBattleLog(prev => [...prev, `🤐 ${actor.name} 封印了 ${target.name} 的招式！(沉默 1 回合)`]);
+                  const echoDmg = target.diceActions[3]?.value || 0;
+                  actor.pendingEchoDmg = { targetId: target.id, val: echoDmg };
+                  setBattleLog(prev => [...prev, `🤐 ${actor.name} 截取了 ${target.name} 的本源殘響！(下回合結算 ${echoDmg} 點傷害)`]);
                   triggerVfx(target.id, 'stun');
                 } else if (action.effect === 'SILENCE_TRANSFER' && target) {
                   target.statuses.silenced = 1;
                   actor.hasDamageTransferTo = target.id;
                   setBattleLog(prev => [...prev, `👻 ${actor.name} 隱入陰影並連結了 ${target.name}！將轉移本回合受到的傷害。`]);
                   triggerVfx(actor.id, 'dark');
-                } else if (action.effect === 'SILENCE_UNTARGETABLE' && target) {
+                } else if (action.effect === 'SOURCE_AVERAGE' && target) {
                   target.statuses.silenced = 1;
-                  actor.statuses.untargetable = 1;
-                  setBattleLog(prev => [...prev, `🎭 ${actor.name} 戲弄了 ${target.name} 並消失在原地！(不可選中 1 回合)`]);
+                  setBattleLog(prev => [...prev, `🤐 ${actor.name} 對 ${target.name} 施加了本源禁錮！`]);
+                  if (target.currentHp > actor.currentHp) {
+                    const avg = Math.round((target.currentHp + actor.currentHp) / 2);
+                    target.currentHp = avg;
+                    actor.currentHp = avg;
+                    setBattleLog(prev => [...prev, `⚖️ 眾生平等：雙方生命值平均分攤為 ${avg}！`]);
+                    triggerVfx(actor.id, 'light');
+                    triggerVfx(target.id, 'light');
+                  }
                   triggerVfx(actor.id, 'dark');
                 }
               } else if (action.type === 'ultimate') {
@@ -1321,6 +1343,19 @@ function App() {
           if (h.statuses.speed > 0) h.statuses.speed--;
           if (h.statuses.superArmor > 0) h.statuses.superArmor--;
           if (h.statuses.stunned > 0) h.statuses.stunned--;
+
+          // Xioule Source Echo resolution
+          if (h.id === 'theiolee' && h.pendingEchoDmg && h.currentHp > 0) {
+            const { targetId, val } = h.pendingEchoDmg;
+            const enemyTeam = currentBattleData.p1.find(x => x.id === h.id) ? currentBattleData.p2 : currentBattleData.p1;
+            const echoTarget = enemyTeam.find(e => e.id === targetId && e.currentHp > 0);
+            if (echoTarget) {
+              setBattleLog(prev => [...prev, `括 ${h.name} 觸發 [本源殘響]！`]);
+              applyDamage(echoTarget, val, getVfxColor(h.factionId), true, false, h);
+            }
+            h.pendingEchoDmg = null;
+          }
+
           h.hasDamageTransferTo = null; // Clear Theiolee's transfer
         });
       }
