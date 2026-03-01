@@ -2032,6 +2032,8 @@ function App() {
         version: "第二章：英雄集結 (Hero Assembly)",
         date: "2026-03-01 最終更新",
         items: [
+          "[新英雄降臨] 🏮 原創英雄「護脈神 洛君」降臨光明聖殿！擁有強大的 [龍脈護靈] 被動，能使我方首名陣亡者滿血復活。",
+          "[本源覺醒] 🎭 希歐雷機制大重塑：新增 [本源殘響] (異步傷害) 與 [眾生平等] (血量均輸)，徹底轉向戰略壓制定位。",
           "[英雄強化] 🔮 阿萊斯特「零度奇點」戰術升級：現在受壓制的目標將額外承受我方英雄 +2 點傷害，大幅強化團隊集火效率。",
           "[新英雄降臨] 🎭 「妙手神偷 希歐雷」加入浪人武士！獨特機制 [沉默]、[傷害轉移] 與複製大招的 [神偷天下] 震撼戰場。",
           "[英雄平衡] ⚖️ 希歐雷戰力優化：基礎技能 (1)(2)(3) 點數傷害從 0 提升至 1，增加正面對拼能力。",
@@ -2287,6 +2289,9 @@ function App() {
                 </div>
               </div>
               <button className="logout-btn" onClick={handleLogout}>登出帳號</button>
+            </div>
+            <div className="logo-container">
+              <h1 className="game-title">艾森諾對決 (V1.6)</h1>
             </div>
             <div className="lobby-content glass-panel">
               <h2 className="lobby-title">遊戲大廳</h2>
