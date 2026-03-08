@@ -266,8 +266,8 @@
                     2: { type: 'attack', value: 1, name: '幽魅妙手', effect: 'SILENCE_TRANSFER', description: '沉默目標 1 回合。本回合自己受到的傷害將全數轉移給該目標。' },
                     3: { type: 'attack', value: 1, name: '君子上梁', effect: 'SOURCE_AVERAGE', description: '沉默目標 1 回合。若目標目前的血量高於自己，則將雙方血量平均分配（眾生平等）。' },
                     4: { type: 'ultimate', name: '神偷天下', effect: 'COPY_ULTIMATE', description: '沉默目標 1 回合。封鎖目標的本源，並複製其 (4) 號位的技能數據並立即對其使用。' },
-                    5: { type: 'evade', name: '隱遁', description: '消失在陰影之中，迴避對手的攻擊。' },
-                    6: { type: 'block', name: '格檔', description: '採取防禦架勢，減少受到的傷害。' }
+                    5: { type: 'evade', name: '隱遁' },
+                    6: { type: 'block', name: '格檔' }
                 },
                 image: '/assets/theiolee.jpg',
                 imageSettings: { objectPosition: 'center 10%' }
