@@ -5,6 +5,27 @@
         description: '追求正義與光明的神聖殿堂，以強悍的攻擊力和速度著稱。',
         heroes: [
             {
+                id: 'luojun',
+                name: '護脈神 洛君',
+                hp: 7,
+                speed: 7,
+                voice: '九州亂，天地劫，龍脈……無可斬斷',
+                passive: {
+                    name: '龍脈護靈',
+                    description: '使我方第一陣亡者滿血復活一次（每場限一次）。'
+                },
+                diceActions: {
+                    1: { type: 'attack', value: 1, name: '龍息' },
+                    2: { type: 'attack', value: 2, name: '脈衝' },
+                    3: { type: 'attack', value: 5, name: '崩天' },
+                    4: { type: 'ultimate', value: 7, name: '九龍鎮岳印', description: '對目標造成 7 點巨額物理傷害。' },
+                    5: { type: 'evade', name: '閃避' },
+                    6: { type: 'block', name: '格檔' }
+                },
+                image: '/assets/luojun.png?v=1',
+                imageSettings: { objectPosition: 'center 10%' }
+            },
+            {
                 id: 'bright',
                 name: '大天使 布萊特',
                 hp: 7,
@@ -69,27 +90,6 @@
                     6: { type: 'block', name: '道心' }
                 },
                 image: '/assets/omega.png'
-            },
-            {
-                id: 'luojun',
-                name: '護脈神 洛君',
-                hp: 7,
-                speed: 7,
-                voice: '九州亂，天地劫，龍脈……無可斬斷',
-                passive: {
-                    name: '龍脈護靈',
-                    description: '使我方第一陣亡者滿血復活一次（每場限一次）。'
-                },
-                diceActions: {
-                    1: { type: 'attack', value: 1, name: '龍息' },
-                    2: { type: 'attack', value: 2, name: '脈衝' },
-                    3: { type: 'attack', value: 5, name: '崩天' },
-                    4: { type: 'ultimate', value: 7, name: '龍脈．天劫', description: '對目標造成 7 點巨額物理傷害。' },
-                    5: { type: 'evade', name: '閃避' },
-                    6: { type: 'block', name: '格檔' }
-                },
-                image: '/assets/luojun.png',
-                imageSettings: { objectPosition: 'center 15%' }
             },
         ]
     },
@@ -329,6 +329,27 @@
                     6: { type: 'block', name: '格檔' }
                 },
                 image: '/assets/raz.png'
+            },
+            {
+                id: 'xiaoqing',
+                name: '浩然一炁 筱清',
+                hp: 5,
+                speed: 6,
+                voice: '吾養吾炁正浩然',
+                passive: {
+                    name: '浩然一炁',
+                    description: '所有傷害皆為群傷。'
+                },
+                diceActions: {
+                    1: { type: 'attack', value: 1, name: '正氣拳' },
+                    2: { type: 'attack', value: 2, name: '浩然一擊' },
+                    3: { type: 'attack', value: 3, name: '炁海狂潮' },
+                    4: { type: 'ultimate', value: 4, name: '浩然天地', description: '對所有敵人造成 4 點傷害。', target: 'all' },
+                    5: { type: 'evade', name: '閃避' },
+                    6: { type: 'block', name: '格檔' }
+                },
+                image: '/assets/xiaoqing.png',
+                imageSettings: { objectPosition: 'center 10%' }
             },
         ]
     }
