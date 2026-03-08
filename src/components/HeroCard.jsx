@@ -194,7 +194,7 @@ const HeroCard = ({ hero, factionId, isInBattle, onClick, isSelected, isTargeted
                                     <span className="action-desc">
                                         {action.type === 'attack' ? (action.description || `${action.value} DMG`) :
                                             action.type === 'ultimate' ? (action.effect === 'HEAL_FULL' ? `${action.name}: 回復滿血` : `${action.name}: ${action.description || `${action.value} DMG`}`) :
-                                                action.name || action.type}
+                                                (action.description || action.name || action.type)}
                                     </span>
                                 </div>
                             );
