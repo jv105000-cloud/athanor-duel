@@ -163,12 +163,12 @@
                     description: '攻擊命中目標時疊加沙塵，積累 2 個沙塵則目標石化（暈眩）2 回合。'
                 },
                 diceActions: {
-                    1: { type: 'attack', value: 3, name: '沙陷' },
-                    2: { type: 'attack', value: 3, name: '塵暴' },
-                    3: { type: 'attack', value: 5, name: '日砂' },
+                    1: { type: 'attack', value: 3, name: '流沙陷阱' },
+                    2: { type: 'attack', value: 3, name: '飛沙走石' },
+                    3: { type: 'attack', value: 5, name: '砂魔之眼' },
                     4: { type: 'ultimate', name: '沙塵之縛', description: '造成群體石化（暈眩），持續回合數為敵方存活數量 × 2。', effect: 'AZZENKA_ULT' },
-                    5: { type: 'evade', name: '閃避' },
-                    6: { type: 'block', name: '格檔' }
+                    5: { type: 'evade', name: '沙塵化' },
+                    6: { type: 'block', name: '海市蜃樓' }
                 },
                 image: '/assets/azzenka.png',
                 imageSettings: { objectPosition: 'center 10%' }
