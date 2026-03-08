@@ -262,10 +262,10 @@
                 speed: 6,
                 voice: '本源會指引我奪取那件寶物，而你甚至看不見我的影子。',
                 diceActions: {
-                    1: { type: 'attack', value: 1, name: '繳械', effect: 'SOURCE_ECHO', description: '使目標沉默 1 回合，且下回合對其自動造成其 (3) 號位同等的傷害。' },
-                    2: { type: 'attack', value: 1, name: '幽魅妙手', effect: 'SILENCE_TRANSFER', description: '使目標對抗沉默 1 回合，且本回合受到的傷害將轉移給該目標。' },
-                    3: { type: 'attack', value: 1, name: '君子上梁', effect: 'SOURCE_AVERAGE', description: '沉默目標 1 回合，且若目標血量高於自己，將雙方血量平均分攤。' },
-                    4: { type: 'ultimate', name: '神偷天下', effect: 'COPY_ULTIMATE', description: '沉默目標 1 回合，並複製目標對方的 (4) 號技能立即使用。' },
+                    1: { type: 'attack', value: 1, name: '繳械', effect: 'SOURCE_ECHO', description: '沉默目標 1 回合。下回合開始時，對其造成等同於其 (3) 號位技能點數的傷害（本源殘響）。' },
+                    2: { type: 'attack', value: 1, name: '幽魅妙手', effect: 'SILENCE_TRANSFER', description: '沉默目標 1 回合。本回合自己受到的傷害將全數轉移給該目標。' },
+                    3: { type: 'attack', value: 1, name: '君子上梁', effect: 'SOURCE_AVERAGE', description: '沉默目標 1 回合。若目標目前的血量高於自己，則將雙方血量平均分配（眾生平等）。' },
+                    4: { type: 'ultimate', name: '神偷天下', effect: 'COPY_ULTIMATE', description: '沉默目標 1 回合。封鎖目標的本源，並複製其 (4) 號位的技能數據並立即對其使用。' },
                     5: { type: 'evade', name: '隱遁' },
                     6: { type: 'block', name: '格檔' }
                 },
