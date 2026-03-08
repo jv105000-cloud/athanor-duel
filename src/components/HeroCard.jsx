@@ -155,7 +155,9 @@ const HeroCard = ({ hero, factionId, isInBattle, onClick, isSelected, isTargeted
 
                         // Check for attack grouping (sequential 1-4)
                         for (let i = 1; i <= 4; i++) {
-                            if (hero.diceActions[i]?.type === 'attack') {
+                            const action = hero.diceActions[i];
+                            // Only group if it's an attack AND doesn't have a special description
+                            if (action?.type === 'attack' && !action.description) {
                                 currentAttackDice.push(i);
                             } else {
                                 break;
