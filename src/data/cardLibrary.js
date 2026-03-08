@@ -170,7 +170,7 @@
                     5: { type: 'evade', name: '沙塵化' },
                     6: { type: 'block', name: '海市蜃樓' }
                 },
-                image: '/assets/azzenka.png',
+                image: '/assets/azzenka.avif?v=1',
                 imageSettings: { objectPosition: 'center 10%' }
             },
             {
