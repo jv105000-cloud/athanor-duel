@@ -1184,6 +1184,21 @@ function App() {
                   if (actualDmg > 0) {
                     hitAny = true;
                     setBattleLog(prev => [...prev, `${logHeader}施展 [${action.name}]，造成 ${actualDmg} 點傷害！`]);
+
+                    // Azzen'Ka Passive: Petrification
+                    if (actor.id === 'azzenka') {
+                      target.sandStacks = (target.sandStacks || 0) + 1;
+                      setBattleLog(prev => [...prev, `⏳ ${target.name} 被沙塵侵蝕 (${target.sandStacks}/2)`]);
+                      if (target.sandStacks >= 2) {
+                        target.sandStacks = 0;
+                        if (!target.statuses?.superArmor) {
+                          target.statuses.stunned = Math.max(target.statuses.stunned || 0, 2);
+                          setBattleLog(prev => [...prev, `🗿 ${target.name} 徹底石化了，持續 2 回合！`]);
+                          triggerVfx(target.id, 'stun');
+                        }
+                      }
+                      setBattleData(JSON.parse(JSON.stringify(currentBattleData)));
+                    }
                   } else if (target.statuses?.untargetable > 0) {
                     setBattleLog(prev => [...prev, `${logHeader}捕捉不到 ${target.name} 的真身，攻擊落空了！`]);
                   } else if (target.statuses?.invincible > 0) {
@@ -1215,6 +1230,18 @@ function App() {
                     triggerVfx(target.id, 'light');
                   }
                   triggerVfx(actor.id, 'dark');
+                } else if (action.effect === 'AZZENKA_ULT') {
+                  const aliveEnemies = enemyTeam.filter(h => h.currentHp > 0).length;
+                  const stunDuration = aliveEnemies * 2;
+                  enemyTeam.forEach(e => {
+                    if (e.currentHp > 0 && !e.statuses?.superArmor) {
+                      e.statuses.stunned = Math.max(e.statuses.stunned || 0, stunDuration);
+                      triggerVfx(e.id, 'stun');
+                    }
+                  });
+                  setBattleLog(prev => [...prev, `🏜️ ${actor.name} 釋放「沙塵之縛」！對全體造成 ${stunDuration} 回合的大規模石化！`]);
+                  triggerVfx(actor.id, 'dark');
+                  setBattleData(JSON.parse(JSON.stringify(currentBattleData)));
                 }
               } else if (action.type === 'ultimate') {
                 const skillName = action.name || "大招";
@@ -2044,9 +2071,10 @@ function App() {
         version: "第二章：英雄集結 (Hero Assembly)",
         date: "2026-03-08 最終更新",
         items: [
-          "[技能重塑] 🃏 希歐雷「神偷天下」升級：現在複製 (4) 號位技能前會先沉默目標，且能複製非大招類型的技能。",
+          "[新英雄降臨] 🏜️ 原創英雄「日砂夢魘 阿茲卡」降臨魔能深淵！擁有 [石化] 被動，命中兩次後會使敵人石化 2 回合。大招可造成大規模群體控制。",
           "[英雄調整] 🥋 筱清動作定位優化：(4) 號位技能「排山倒海」修正為普通攻擊類型，符合其武學連貫性。",
           "[介面拋光] 🏷️ 筱清肖像重心調整：優化 object-position 以防止影像切腳。",
+          "[技能重塑] 🃏 希歐雷「神偷天下」升級：現在複製 (4) 號位技能前會先沉默目標，且能複製非大招類型的技能。",
           "[新英雄降臨] 🥋 原創英雄「浩然一炁 筱清」降臨浪人武士！擁有 [浩然一炁] 被動，使其所有普通攻擊皆轉化為群體傷害。",
           "[新英雄降臨] 🏮 原創英雄「護脈神 洛君」降臨光明聖殿！擁有強大的 [龍脈護靈] 被動，能使我方首名陣亡者滿血復活。",
           "[本源覺醒] 🎭 希歐雷機制大重塑：新增 [本源殘響] (異步傷害) 與 [眾生平等] (血量均輸)，徹底轉向戰略壓制定位。",
@@ -2307,7 +2335,7 @@ function App() {
               <button className="logout-btn" onClick={handleLogout}>登出帳號</button>
             </div>
             <div className="logo-container">
-              <h1 className="game-title">艾森諾對決 (V1.7)</h1>
+              <h1 className="game-title">艾森諾對決 (V1.8)</h1>
             </div>
             <div className="lobby-content glass-panel">
               <h2 className="lobby-title">遊戲大廳</h2>

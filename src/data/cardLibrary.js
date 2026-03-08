@@ -153,6 +153,27 @@
                 imageSettings: { objectPosition: 'center 20%' }
             },
             {
+                id: 'azzenka',
+                name: '日砂夢魘 阿茲卡',
+                hp: 5,
+                speed: 5,
+                voice: '我的魔力，都燃燒整個沙漠。',
+                passive: {
+                    name: '石化',
+                    description: '攻擊命中目標時疊加沙塵，積累 2 個沙塵則目標石化（暈眩）2 回合。'
+                },
+                diceActions: {
+                    1: { type: 'attack', value: 3, name: '沙陷' },
+                    2: { type: 'attack', value: 3, name: '塵暴' },
+                    3: { type: 'attack', value: 5, name: '日砂' },
+                    4: { type: 'ultimate', name: '沙塵之縛', description: '造成群體石化（暈眩），持續回合數為敵方存活數量 × 2。', effect: 'AZZENKA_ULT' },
+                    5: { type: 'evade', name: '閃避' },
+                    6: { type: 'block', name: '格檔' }
+                },
+                image: '/assets/azzenka.png',
+                imageSettings: { objectPosition: 'center 10%' }
+            },
+            {
                 id: 'nakroth',
                 name: '幻冥似刃 納克羅斯',
                 hp: 6,
