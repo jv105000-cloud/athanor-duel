@@ -262,10 +262,10 @@
                 speed: 6,
                 voice: '本源會指引我奪取那件寶物，而你甚至看不見我的影子。',
                 diceActions: {
-                    1: { type: 'attack', value: 1, name: '繳械', effect: 'SOURCE_ECHO', description: '使目標沉默 1 回合，且下回合對其自動造成其 (3) 號位同等的傷害（本源殘響）。' },
+                    1: { type: 'attack', value: 1, name: '繳械', effect: 'SOURCE_ECHO', description: '使目標沉默 1 回合，且下回合對其自動造成其 (3) 號位同等的傷害。' },
                     2: { type: 'attack', value: 1, name: '幽魅妙手', effect: 'SILENCE_TRANSFER', description: '使目標對抗沉默 1 回合，且本回合受到的傷害將轉移給該目標。' },
-                    3: { type: 'attack', value: 1, name: '君子上梁', effect: 'SOURCE_AVERAGE', description: '沉默目標 1 回合，且若目標血量高於自己，將雙方血量平均分攤（眾生平等）。' },
-                    4: { type: 'ultimate', name: '神偷天下', effect: 'COPY_ULTIMATE', description: '複製目標對方的大招（骰子點數 4）並立即使用。' },
+                    3: { type: 'attack', value: 1, name: '君子上梁', effect: 'SOURCE_AVERAGE', description: '沉默目標 1 回合，且若目標血量高於自己，將雙方血量平均分攤。' },
+                    4: { type: 'ultimate', name: '神偷天下', effect: 'COPY_ULTIMATE', description: '沉默目標 1 回合，並複製目標對方的 (4) 號技能立即使用。' },
                     5: { type: 'evade', name: '隱遁' },
                     6: { type: 'block', name: '格檔' }
                 },
@@ -341,15 +341,15 @@
                     description: '所有傷害皆為群傷。'
                 },
                 diceActions: {
-                    1: { type: 'attack', value: 1, name: '正氣拳' },
-                    2: { type: 'attack', value: 2, name: '浩然一擊' },
-                    3: { type: 'attack', value: 3, name: '炁海狂潮' },
-                    4: { type: 'ultimate', value: 4, name: '浩然天地', description: '對所有敵人造成 4 點傷害。', target: 'all' },
-                    5: { type: 'evade', name: '閃避' },
-                    6: { type: 'block', name: '格檔' }
+                    1: { type: 'attack', value: 1, name: '奔雷掌' },
+                    2: { type: 'attack', value: 2, name: '乾坤陣' },
+                    3: { type: 'attack', value: 3, name: '撼月崩山' },
+                    4: { type: 'attack', value: 4, name: '排山倒海', description: '對所有敵人造成 4 點傷害。', target: 'all' },
+                    5: { type: 'evade', name: '行如風' },
+                    6: { type: 'block', name: '站如松' }
                 },
                 image: '/assets/xiaoqing.png',
-                imageSettings: { objectPosition: 'center 10%' }
+                imageSettings: { objectPosition: 'center 15%' }
             },
         ]
     }

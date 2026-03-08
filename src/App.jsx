@@ -1221,16 +1221,15 @@ function App() {
 
                 // Theiolee: Implementation of COPY_ULTIMATE
                 if (action.effect === 'COPY_ULTIMATE' && target) {
-                  const targetUlt = target.diceActions[4];
-                  if (targetUlt && targetUlt.type === 'ultimate') {
-                    setBattleLog(prev => [...prev, `🎭 ${actor.name} 施展 [${skillName}]！複製並使用了 ${target.name} 的大招 [${targetUlt.name}]！`]);
-                    // Recursively execute the target's ultimate effect using a dummy playStep concept
-                    // Since specific ultimates are complex, we'll manually proxy the most common ones or re-run logic
-                    // For simplicity, we create a temporary action object and re-process it
-                    await handleCopiedUltimate(actor, target, targetUlt, playerNum, logHeader);
+                  target.statuses.silenced = 1;
+                  const targetSkill = target.diceActions[4];
+                  if (targetSkill) {
+                    setBattleLog(prev => [...prev, `🤐 ${actor.name} 奪取了 ${target.name} 的數據並封印了其行動！`]);
+                    setBattleLog(prev => [...prev, `🎭 ${actor.name} 施展 [${skillName}]！複製並使用了 ${target.name} 的 (4) 號技能 [${targetSkill.name}]！`]);
+                    await handleCopiedUltimate(actor, target, targetSkill, playerNum, logHeader);
                     hitAny = true;
                   } else {
-                    setBattleLog(prev => [...prev, `❌ ${actor.name} 試圖複製招式，但對手似乎沒有準備大招！`]);
+                    setBattleLog(prev => [...prev, `❌ ${actor.name} 試圖複製招式，但對手似乎沒有準備 (4) 號技能！`]);
                   }
                 }
                 else if (action.effect === 'UNTARGETABLE_2_TURNS') {
@@ -1383,10 +1382,10 @@ function App() {
             const d = applyDamage(e, action.value || 0, getVfxColor(actor.factionId), action.effect === 'TRUE_DAMAGE_ALL', false, actor);
             if (d > 0) triggerVfx(e.id, 'damage', d);
           });
-          setBattleLog(prev => [...prev, `💥 複製的大招對敵方全體造成了毀滅性打擊！`]);
+          setBattleLog(prev => [...prev, `💥 複製的招式對敵方全體造成了打擊！`]);
         } else if (target && action.value > 0) {
           const d = applyDamage(target, action.value, getVfxColor(actor.factionId), false, false, actor);
-          if (d > 0) setBattleLog(prev => [...prev, `💥 複製的大招對 ${target.name} 造成 ${d} 點傷害！`]);
+          if (d > 0) setBattleLog(prev => [...prev, `💥 複製的招式對 ${target.name} 造成 ${d} 點傷害！`]);
         }
 
         // Special Effects Mirror
@@ -2045,6 +2044,9 @@ function App() {
         version: "第二章：英雄集結 (Hero Assembly)",
         date: "2026-03-08 最終更新",
         items: [
+          "[技能重塑] 🃏 希歐雷「神偷天下」升級：現在複製 (4) 號位技能前會先沉默目標，且能複製非大招類型的技能。",
+          "[英雄調整] 🥋 筱清動作定位優化：(4) 號位技能「排山倒海」修正為普通攻擊類型，符合其武學連貫性。",
+          "[介面拋光] 🏷️ 筱清肖像重心調整：優化 object-position 以防止影像切腳。",
           "[新英雄降臨] 🥋 原創英雄「浩然一炁 筱清」降臨浪人武士！擁有 [浩然一炁] 被動，使其所有普通攻擊皆轉化為群體傷害。",
           "[新英雄降臨] 🏮 原創英雄「護脈神 洛君」降臨光明聖殿！擁有強大的 [龍脈護靈] 被動，能使我方首名陣亡者滿血復活。",
           "[本源覺醒] 🎭 希歐雷機制大重塑：新增 [本源殘響] (異步傷害) 與 [眾生平等] (血量均輸)，徹底轉向戰略壓制定位。",
